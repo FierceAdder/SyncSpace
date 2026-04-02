@@ -83,4 +83,36 @@ router.post('/join',verifyToken,async (req,res)=>{
     }
 });
 
+router.delete('/:groupId/delete',verifyToken,async (req,res)=>{
+    try{
+        const userId=req.user.id;
+        const groupId=req.params.groupId;
+        const group=await Group.findById(groupId);
+        if(!group){
+            return res.status(404).json({
+                "message" : "Group not Found."
+            });
+        }
+        if(group.Group_Owner_Id.toString()===userId){
+            await Resource.deleteMany({ Group_Posted_In: groupId });
+            await User.updateMany( { Groups_Part_Of: groupId }, 
+                { $pull: { Groups_Part_Of: groupId, Groups_Created: groupId } } );
+            await group.deleteOne();
+            return res.status(200).json({
+                "message" : "Group deleted successfully"
+            });
+        }else{
+            return res.status(403).json({
+                "message" : "Unauthorized"
+            });
+        }
+    }catch(err){
+        console.log("Error : ",err);
+        res.status(500).json({
+            "message" : "Error Occured"
+        })
+    }
+    
+});
+
 module.exports = router;

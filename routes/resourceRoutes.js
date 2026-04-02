@@ -117,4 +117,30 @@ router.put("/:resourceId/downvote", verifyToken, async (req, res) => {
     }
 });
 
+router.delete("/:resourceId",verifyToken,async (req,res)=>{
+    try{
+        const userId=req.user.id;
+        const resourceId=req.params.resourceId;
+        const resource = await Resource.findById(resourceId);
+        if(!resource){
+            return res.status(404).json({ message: "Resource Not Found." }); 
+        }
+        const resourceOwner = resource.Posted_By.toString();
+        const group = (await Group.findById(resource.Group_Posted_In));
+        if(userId===resourceOwner || (group && userId===group.Group_Owner_Id.toString())){
+            await resource.deleteOne()
+            res.status(200).json({
+                "message" : "Deleted resource successfully."
+            });
+        }else{
+            res.status(403).json({
+                "message" : "Unauthorized!!!"
+            });
+        }
+    }catch(err){
+        console.log("Error : ", err);
+        res.status(500).json({ message: "Error Occured" });
+    }
+});
+
 module.exports = router;
