@@ -44,6 +44,22 @@ export const deleteGroup = (groupId) =>
 export const leaveGroup = (groupId) =>
   fetch(`${BASE_URL}/groups/${groupId}/leave`, { method: 'PUT', headers: getHeaders(true) }).then(handleResponse);
 
+// NEW
+export const getMyGroups = () =>
+  fetch(`${BASE_URL}/groups/mine`, { headers: getHeaders(true) }).then(handleResponse);
+
+export const getGroupDetails = (groupId) =>
+  fetch(`${BASE_URL}/groups/${groupId}`, { headers: getHeaders(true) }).then(handleResponse);
+
+export const getGroupMembers = (groupId) =>
+  fetch(`${BASE_URL}/groups/${groupId}/members`, { headers: getHeaders(true) }).then(handleResponse);
+
+export const kickMember = (groupId, memberId) =>
+  fetch(`${BASE_URL}/groups/${groupId}/members/${memberId}`, { method: 'DELETE', headers: getHeaders(true) }).then(handleResponse);
+
+export const regenerateJoinCode = (groupId) =>
+  fetch(`${BASE_URL}/groups/${groupId}/regenerate-code`, { method: 'PUT', headers: getHeaders(true) }).then(handleResponse);
+
 // Resources
 export const addResource = (body) =>
   fetch(`${BASE_URL}/resources/add`, { method: 'POST', headers: getHeaders(true), body: JSON.stringify(body) }).then(handleResponse);

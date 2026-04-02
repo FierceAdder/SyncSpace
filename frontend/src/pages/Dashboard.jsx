@@ -4,7 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import {
   getRecentResources, searchResources,
-  createGroup, joinGroup, deleteGroup, leaveGroup, getProfile
+  createGroup, joinGroup, deleteGroup, leaveGroup, getProfile,
+  getMyGroups
 } from '../utils/api';
 import { ResourceCard } from '../components/ResourceCard';
 import { Spinner, Toast, Modal, ErrorMsg, Skeleton, EmptyState } from '../components/UI';
@@ -38,15 +39,14 @@ export default function Dashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [profileData, recentsData] = await Promise.all([getProfile(), getRecentResources()]);
+      const [profileData, recentsData, groupsData] = await Promise.all([
+        getProfile(),
+        getRecentResources(),
+        getMyGroups()
+      ]);
       setProfile(profileData.Profile);
       setRecents(recentsData.resources || []);
-      // Build unique groups list from recents
-      const groupMap = {};
-      (recentsData.resources || []).forEach(r => {
-        if (r.Group_Posted_In?._id) groupMap[r.Group_Posted_In._id] = r.Group_Posted_In;
-      });
-      setGroups(Object.values(groupMap));
+      setGroups(groupsData.groups || []);
     } catch (err) {
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('token')) {
         logout(); navigate('/');
@@ -319,40 +319,54 @@ const SidebarGroup = ({ group, onDelete, onLeave }) => {
       <Link
         to={`/group/${group._id}`}
         className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-100"
+        onClick={() => setMenuOpen(false)}
       >
         <div className="w-5 h-5 rounded bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-400 shrink-0">
           {group.Group_Name?.[0]?.toUpperCase()}
         </div>
-        <span className="text-sm truncate flex-1">{group.Group_Name}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm truncate leading-tight">{group.Group_Name}</p>
+          <p className="text-xs text-zinc-600 leading-tight">{group.memberCount} member{group.memberCount !== 1 ? 's' : ''}</p>
+        </div>
+        {group.isOwner && (
+          <span className="shrink-0 font-mono text-[10px] text-zinc-600 border border-zinc-700 rounded px-1">owner</span>
+        )}
         <button
-          onClick={(e) => { e.preventDefault(); setMenuOpen(v => !v); }}
-          className="opacity-0 group-hover/item:opacity-100 text-zinc-600 hover:text-zinc-300 text-xs px-1 rounded transition-all"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(v => !v); }}
+          className="opacity-0 group-hover/item:opacity-100 text-zinc-600 hover:text-zinc-300 text-xs px-1 rounded transition-all shrink-0"
         >
           ···
         </button>
       </Link>
       {menuOpen && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl py-1 min-w-36 animate-scale-in">
-          <Link
-            to={`/group/${group._id}`}
-            className="block px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            Open feed
-          </Link>
-          <button
-            onClick={() => { onLeave(group._id); setMenuOpen(false); }}
-            className="w-full text-left px-4 py-2 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
-          >
-            Leave group
-          </button>
-          <button
-            onClick={() => { onDelete(group._id); setMenuOpen(false); }}
-            className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950 transition-colors"
-          >
-            Delete group
-          </button>
-        </div>
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-20 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl py-1 min-w-36 animate-scale-in">
+            <Link
+              to={`/group/${group._id}`}
+              className="block px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Open feed
+            </Link>
+            {!group.isOwner && (
+              <button
+                onClick={() => { onLeave(group._id); setMenuOpen(false); }}
+                className="w-full text-left px-4 py-2 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+              >
+                Leave group
+              </button>
+            )}
+            {group.isOwner && (
+              <button
+                onClick={() => { onDelete(group._id); setMenuOpen(false); }}
+                className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-950 transition-colors"
+              >
+                Delete group
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
