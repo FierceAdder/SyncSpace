@@ -4,8 +4,9 @@ const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
-
+const cors = require("cors");
 const app=express();
+app.use(cors({ origin: "http://localhost:5173" }));
 const MONGO_URI=process.env.MONGO_URI;
 app.use(express.json());
 app.use('/user', userRoutes);
