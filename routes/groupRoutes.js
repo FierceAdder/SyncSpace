@@ -115,4 +115,28 @@ router.delete('/:groupId/delete',verifyToken,async (req,res)=>{
     
 });
 
+router.put('/:groupId/leave',verifyToken,async (req,res)=>{
+    try {
+        const userId=req.user.id;
+        const groupId=req.params.groupId;
+        const group=await Group.findById(groupId);
+        if(userId===group.Group_Owner_Id.toString()){
+            return res.status(405).json({
+                "message" : "Group Owner can't abandon the group.Try deleting."
+            });
+        }else{
+            await Group.findByIdAndUpdate(groupId, { $pull: { Members: req.user.id } })
+            await User.findByIdAndUpdate(userId, { $pull: { Groups_Part_Of: groupId } })
+            return res.status(200).json({
+                "message" : "Group Left successfully."
+            });
+        }
+    } catch (err) {
+        console.log("Error : ",err);
+        res.status(500).json({
+            "message" : "Error Occured"
+        })
+    }
+});
+
 module.exports = router;

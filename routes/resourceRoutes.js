@@ -143,6 +143,62 @@ router.delete("/:resourceId",verifyToken,async (req,res)=>{
     }
 });
 
+router.get('/recents', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId);
 
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const resources = await Resource.find({ 
+            Group_Posted_In: { $in: user.Groups_Part_Of } 
+        })
+        .sort({ _id: -1 }) 
+        .limit(10)
+        .populate('Posted_By', 'UserName')
+        .populate('Group_Posted_In', 'Group_Name');
+
+        res.status(200).json({ resources });
+    } catch (err) {
+        console.log("Error : ", err);
+        res.status(500).json({ message: "Error Occured" });
+    }
+});
+
+router.get('/search', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const searchQuery = req.query.q; 
+        
+        if (!searchQuery) {
+            return res.status(400).json({ message: "Search query is required." });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        const searchRegex = new RegExp(searchQuery, 'i');
+
+        const resources = await Resource.find({
+            Group_Posted_In: { $in: user.Groups_Part_Of }, 
+            $or: [                                         
+                { Name: { $regex: searchRegex } },
+                { Category: { $regex: searchRegex } },
+                { Content: { $regex: searchRegex } }
+            ]
+        })
+        .populate('Posted_By', 'UserName')
+        .populate('Group_Posted_In', 'Group_Name');
+
+        res.status(200).json({ resources });
+    } catch (err) {
+        console.log("Error : ", err);
+        res.status(500).json({ message: "Error Occured" });
+    }
+});
 
 module.exports = router;

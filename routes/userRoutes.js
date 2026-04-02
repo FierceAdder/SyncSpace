@@ -36,7 +36,6 @@ router.post('/register',async (req,res)=>{
     }
 });
 
-
 router.post('/login',async (req,res)=>{
     try{
         const details = req.body;
@@ -130,7 +129,7 @@ router.put('/update-password',verifyToken,async (req,res)=>{
         const oldPassword=req.body.oldPassword;
         const newPassword=req.body.newPassword;
         const user=await User.findById(userId);
-        const validOldPassword=bcrypt.compare(user.Password,oldPassword);
+        const validOldPassword=await bcrypt.compare(oldPassword,user.Password);
         if(validOldPassword){
             const salt = await bcrypt.genSalt(11);
             user.Password = await bcrypt.hash(newPassword, salt);
