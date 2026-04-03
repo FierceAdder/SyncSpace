@@ -1,3 +1,10 @@
+/* ============================================================
+   Sidebar — CSS-only collapse/expand (no conditional rendering)
+   All text content uses .sidebar-label — it fades+shrinks
+   simultaneously with the sidebar width, so there's ONE smooth
+   animation with no two-stage jitter.
+   ============================================================ */
+
 .sidebar {
   position: fixed;
   top: 0;
@@ -11,9 +18,10 @@
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: width var(--transition-normal);
+  /* Single transition drives EVERYTHING */
+  transition: width var(--transition-normal), min-width var(--transition-normal), max-width var(--transition-normal);
   overflow: hidden;
-  resize: horizontal; /* allows dragging to resize */
+  resize: horizontal;
 }
 
 .sidebar.collapsed {
@@ -23,13 +31,13 @@
   resize: none;
 }
 
-/* On group pages: hover expands without pushing content */
+/* Hover-expand: overlays content, doesn't push layout */
 .sidebar.hover-expanded {
   width: var(--sidebar-width);
   min-width: 200px;
   max-width: 360px;
   z-index: 200;
-  box-shadow: 4px 0 24px hsla(0, 0%, 0%, 0.15);
+  box-shadow: 4px 0 32px hsla(0, 0%, 0%, 0.25);
   resize: none;
 }
 
@@ -40,21 +48,54 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--space-md);
-  min-width: 0; /* prevents flex children from forcing width */
+  min-width: 0;
 }
 
+/* ---- .sidebar-label — CSS-driven fade/shrink ---- */
+/*
+  All text that should hide when collapsed gets this class.
+  Instead of React removing nodes (which causes layout jumps),
+  we always keep them in the DOM and fade+clip them out.
+  max-width + opacity transition matches the sidebar width
+  transition duration exactly, so they move as one unit.
+*/
+.sidebar-label {
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    opacity var(--transition-normal),
+    max-width var(--transition-normal);
+  /* Prevent layout collapse causing re-layout */
+  flex-shrink: 1;
+}
+
+.sidebar.collapsed .sidebar-label {
+  opacity: 0;
+  max-width: 0;
+  pointer-events: none;
+}
+
+/* When hover-expanding, labels should be visible */
+.sidebar.hover-expanded .sidebar-label {
+  opacity: 1;
+  max-width: 200px;
+  pointer-events: auto;
+}
+
+/* ---- Logo ---- */
 .sidebar-logo {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-sm) var(--space-sm);
+  padding: var(--space-sm);
   cursor: pointer;
   transition: opacity var(--transition-fast);
+  margin-bottom: 4px;
 }
 
-.sidebar-logo:hover {
-  opacity: 0.8;
-}
+.sidebar-logo:hover { opacity: 0.8; }
 
 .logo-icon {
   width: 36px;
@@ -67,7 +108,7 @@
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 1.1rem;
-  color: white;
+  color: var(--color-text-inverse);
   flex-shrink: 0;
 }
 
@@ -79,9 +120,27 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  white-space: nowrap;
 }
 
+/* ---- Toggle button ---- */
+.sidebar-toggle-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px;
+  margin: var(--space-xs) 0 var(--space-md) 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  transition: all var(--transition-fast);
+}
+
+.sidebar-toggle-top:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* ---- Nav items ---- */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -98,7 +157,16 @@
   font-weight: 500;
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
-  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* When collapsed: center the icon, remove gap so hidden label doesn't push it */
+.sidebar.collapsed .nav-item,
+.sidebar.collapsed .nav-item:hover,
+.sidebar.collapsed .nav-item.active {
+  justify-content: center;
+  gap: 0;
+  padding: 10px;
 }
 
 .nav-item:hover {
@@ -111,18 +179,24 @@
   color: var(--color-accent);
 }
 
+/* ---- Divider ---- */
 .sidebar-divider {
   height: 1px;
-  background: hsla(210, 20%, 30%, 0.2);
+  background: var(--color-glass-border);
   margin: var(--space-md) 0;
+  flex-shrink: 0;
 }
 
+/* ---- Groups header ---- */
 .sidebar-groups-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-sm);
   padding: 0 var(--space-sm);
+  /* Fixed height so it never jumps */
+  height: 28px;
+  overflow: hidden;
 }
 
 .section-label {
@@ -133,26 +207,12 @@
   color: var(--color-text-tertiary);
 }
 
+/* Buttons always in a row — never stacked — fits in 68px collapsed width */
 .group-actions-mini {
   display: flex;
+  flex-direction: row;
   gap: 2px;
-}
-
-.sidebar-groups-header.collapsed {
-  justify-content: center;
-  padding: 0;
-}
-
-.group-actions-mini.stacked {
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-}
-
-.group-actions-mini.stacked .icon-btn {
-  width: 36px;
-  height: 36px;
+  flex-shrink: 0;
 }
 
 .icon-btn {
@@ -164,6 +224,7 @@
   border-radius: var(--radius-sm);
   color: var(--color-text-tertiary);
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
@@ -171,12 +232,21 @@
   color: var(--color-accent);
 }
 
+/* In collapsed state, center the action buttons */
+.sidebar.collapsed .sidebar-groups-header {
+  justify-content: center;
+  padding: 0;
+  gap: 4px;
+}
+
+/* ---- Groups list ---- */
 .sidebar-groups-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .no-groups {
@@ -192,21 +262,23 @@
   gap: var(--space-sm);
   padding: 8px 10px;
   border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
-  white-space: nowrap;
+  transition: background var(--transition-fast);
   text-align: left;
-  min-width: 0;      /* allow content to shrink */
-  overflow: hidden;  /* never cause sidebar to widen */
+  min-width: 0;
+  overflow: hidden;
   width: 100%;
+  flex-shrink: 0;
 }
 
-.group-item:hover {
-  background: var(--color-bg-hover);
+/* When collapsed: center avatar, remove gap */
+.sidebar.collapsed .group-item {
+  justify-content: center;
+  gap: 0;
+  padding: 8px;
 }
 
-.group-item.active {
-  background: var(--color-accent-subtle);
-}
+.group-item:hover { background: var(--color-bg-hover); }
+.group-item.active { background: var(--color-accent-subtle); }
 
 .group-item-info {
   display: flex;
@@ -232,24 +304,9 @@
   color: var(--color-text-tertiary);
 }
 
-.sidebar-toggle-top {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 6px;
-  margin: var(--space-sm) 0 var(--space-md) 0;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-tertiary);
-  transition: all var(--transition-fast);
-}
-
-.sidebar-toggle-top:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
-/* Mobile Bottom Nav */
+/* ============================================================
+   Mobile Bottom Nav
+   ============================================================ */
 .mobile-nav {
   display: none;
   position: fixed;
@@ -261,7 +318,7 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   z-index: 100;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) 4px;
   padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom));
   gap: 4px;
   align-items: center;
@@ -272,44 +329,38 @@
   align-items: center;
   cursor: pointer;
   flex-shrink: 0;
-  margin-right: var(--space-xs);
+  margin-right: 4px;
 }
 
 .mobile-nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.65rem;
   font-weight: 500;
   color: var(--color-text-tertiary);
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
+  flex: 1;
+  min-width: 0;
 }
 
+.mobile-nav-item:hover,
 .mobile-nav-item.active {
   color: var(--color-accent);
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
-
-  .mobile-nav {
-    display: flex;
-    justify-content: space-evenly;
-    overflow-x: auto;
-  }
-}
-
-/* ---- Mobile Groups Bottom Sheet ---- */
+/* ============================================================
+   Mobile Groups Bottom Sheet
+   ============================================================ */
 .groups-sheet-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: hsla(220, 30%, 4%, 0.5);
+  background: hsla(0, 0%, 0%, 0.5);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 200;
@@ -330,6 +381,7 @@
   flex-direction: column;
   animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom));
+  position: relative; /* for ::before pseudo */
 }
 
 .groups-sheet-header {
@@ -342,7 +394,7 @@
 }
 
 /* drag handle pill */
-.groups-sheet-header::before {
+.groups-sheet::before {
   content: '';
   position: absolute;
   top: 10px;
@@ -351,7 +403,7 @@
   width: 36px;
   height: 4px;
   border-radius: var(--radius-full);
-  background: hsla(210, 20%, 50%, 0.3);
+  background: hsla(0, 0%, 50%, 0.3);
 }
 
 .groups-sheet-title {
@@ -397,13 +449,8 @@
 }
 
 .groups-sheet-item:hover,
-.groups-sheet-item:active {
-  background: var(--color-bg-hover);
-}
-
-.groups-sheet-item.active {
-  background: var(--color-accent-subtle);
-}
+.groups-sheet-item:active { background: var(--color-bg-hover); }
+.groups-sheet-item.active { background: var(--color-accent-subtle); }
 
 .groups-sheet-item-info {
   flex: 1;
@@ -440,13 +487,22 @@
   text-align: center;
 }
 
-.groups-sheet-empty p {
-  font-size: 0.9rem;
-}
+.groups-sheet-empty p { font-size: 0.9rem; }
 
+/* ============================================================
+   Responsive
+   ============================================================ */
 @media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: flex;
+    justify-content: space-evenly;
+  }
+
   .groups-sheet-overlay {
     display: block;
   }
 }
-

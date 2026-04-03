@@ -1,57 +1,57 @@
 /* ========================================
    SyncSpace Design System
-   Blue-Black Dark Theme + Light Mode
+   Monochrome Dark Theme + Warm Light Mode
    ======================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-/* ---- CSS Custom Properties ---- */
+/* ---- CSS Custom Properties (Dark / Default) ---- */
 :root {
-  /* Base palette */
-  --color-bg-primary: hsl(220, 30%, 6%);
-  --color-bg-secondary: hsl(220, 25%, 10%);
-  --color-bg-tertiary: hsl(220, 22%, 14%);
-  --color-bg-elevated: hsl(220, 25%, 12%);
-  --color-bg-hover: hsl(220, 25%, 16%);
+  /* Pure monochrome backgrounds */
+  --color-bg-primary:   hsl(0, 0%, 5%);    /* near-black */
+  --color-bg-secondary: hsl(0, 0%, 9%);    /* deep charcoal */
+  --color-bg-tertiary:  hsl(0, 0%, 13%);   /* charcoal */
+  --color-bg-elevated:  hsl(0, 0%, 11%);   /* card surface */
+  --color-bg-hover:     hsl(0, 0%, 17%);   /* hover state */
 
   /* Glass */
-  --color-glass-bg: hsla(220, 30%, 12%, 0.6);
-  --color-glass-border: hsla(210, 100%, 55%, 0.12);
-  --color-glass-border-hover: hsla(210, 100%, 55%, 0.25);
+  --color-glass-bg:           hsla(0, 0%, 10%, 0.7);
+  --color-glass-border:       hsla(0, 0%, 100%, 0.08);
+  --color-glass-border-hover: hsla(0, 0%, 100%, 0.18);
 
   /* Text */
-  --color-text-primary: hsl(210, 20%, 95%);
-  --color-text-secondary: hsl(215, 15%, 65%);
-  --color-text-tertiary: hsl(215, 12%, 45%);
-  --color-text-inverse: hsl(220, 30%, 6%);
+  --color-text-primary:   hsl(0, 0%, 96%);   /* nearly white */
+  --color-text-secondary: hsl(0, 0%, 64%);   /* medium gray */
+  --color-text-tertiary:  hsl(0, 0%, 42%);   /* muted gray */
+  --color-text-inverse:   hsl(0, 0%, 5%);    /* black on white */
 
-  /* Accent */
-  --color-accent: hsl(210, 100%, 55%);
-  --color-accent-hover: hsl(210, 100%, 62%);
-  --color-accent-subtle: hsla(210, 100%, 55%, 0.12);
-  --color-cyan: hsl(190, 95%, 50%);
-  --color-cyan-subtle: hsla(190, 95%, 50%, 0.12);
+  /* Accent — crisp white-based neutral */
+  --color-accent:        hsl(0, 0%, 92%);           /* off-white */
+  --color-accent-hover:  hsl(0, 0%, 100%);          /* pure white */
+  --color-accent-subtle: hsla(0, 0%, 92%, 0.1);     /* whitish tint */
+  --color-cyan:          hsl(0, 0%, 80%);            /* light gray (replaces cyan) */
+  --color-cyan-subtle:   hsla(0, 0%, 80%, 0.1);
 
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(210, 100%, 50%), hsl(190, 95%, 50%));
-  --gradient-hero: linear-gradient(135deg, hsl(220, 30%, 6%) 0%, hsl(215, 40%, 12%) 50%, hsl(220, 30%, 6%) 100%);
-  --gradient-card: linear-gradient(145deg, hsla(210, 100%, 55%, 0.05), hsla(190, 95%, 50%, 0.03));
-  --gradient-glow: radial-gradient(ellipse at center, hsla(210, 100%, 55%, 0.15), transparent 70%);
+  /* Gradients — white-to-gray on black */
+  --gradient-primary: linear-gradient(135deg, hsl(0, 0%, 95%), hsl(0, 0%, 72%));
+  --gradient-hero: linear-gradient(135deg, hsl(0, 0%, 5%) 0%, hsl(0, 0%, 10%) 50%, hsl(0, 0%, 5%) 100%);
+  --gradient-card: linear-gradient(145deg, hsla(0, 0%, 100%, 0.03), hsla(0, 0%, 100%, 0.01));
+  --gradient-glow: radial-gradient(ellipse at center, hsla(0, 0%, 100%, 0.06), transparent 70%);
 
-  /* Semantic */
-  --color-success: hsl(155, 75%, 48%);
-  --color-error: hsl(0, 85%, 60%);
+  /* Semantic — keep colored for functional clarity */
+  --color-success: hsl(142, 71%, 45%);
+  --color-error:   hsl(0, 85%, 60%);
   --color-warning: hsl(38, 95%, 55%);
-  --color-info: hsl(210, 100%, 55%);
+  --color-info:    hsl(0, 0%, 92%);
 
   /* Borders & Shadows */
-  --border-subtle: 1px solid hsla(210, 20%, 30%, 0.3);
-  --border-accent: 1px solid hsla(210, 100%, 55%, 0.3);
-  --shadow-sm: 0 2px 8px hsla(220, 50%, 3%, 0.4);
-  --shadow-md: 0 4px 16px hsla(220, 50%, 3%, 0.5);
-  --shadow-lg: 0 8px 32px hsla(220, 50%, 3%, 0.6);
-  --shadow-glow: 0 0 20px hsla(210, 100%, 55%, 0.15);
-  --shadow-glow-strong: 0 0 40px hsla(210, 100%, 55%, 0.25);
+  --border-subtle: 1px solid hsla(0, 0%, 100%, 0.09);
+  --border-accent: 1px solid hsla(0, 0%, 100%, 0.22);
+  --shadow-sm:          0 2px 8px hsla(0, 0%, 0%, 0.6);
+  --shadow-md:          0 4px 16px hsla(0, 0%, 0%, 0.7);
+  --shadow-lg:          0 8px 32px hsla(0, 0%, 0%, 0.8);
+  --shadow-glow:        0 0 20px hsla(0, 0%, 100%, 0.06);
+  --shadow-glow-strong: 0 0 40px hsla(0, 0%, 100%, 0.1);
 
   /* Spacing */
   --space-xs: 0.25rem;
@@ -75,9 +75,9 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Timing */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   400ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Sidebar */
@@ -102,20 +102,27 @@
   --color-text-primary: hsl(220, 28%, 12%);
   --color-text-secondary: hsl(215, 14%, 38%);
   --color-text-tertiary: hsl(215, 10%, 56%);
-  --color-text-inverse: hsl(210, 20%, 95%);
+  --color-text-inverse: hsl(0, 0%, 100%); /* white text on blue buttons */
 
   --color-accent: hsl(210, 100%, 44%);
   --color-accent-hover: hsl(210, 100%, 38%);
   --color-accent-subtle: hsla(210, 100%, 44%, 0.1);
+  --color-cyan: hsl(190, 95%, 42%);
+  --color-cyan-subtle: hsla(190, 95%, 42%, 0.1);
 
+  /* Light mode: blue gradient for primary button */
+  --gradient-primary: linear-gradient(135deg, hsl(210, 100%, 50%), hsl(190, 95%, 45%));
   --gradient-hero: linear-gradient(135deg, hsl(220, 16%, 91%) 0%, hsl(215, 25%, 86%) 50%, hsl(220, 16%, 91%) 100%);
   --gradient-card: linear-gradient(145deg, hsla(210, 100%, 50%, 0.04), hsla(190, 95%, 50%, 0.02));
+  --gradient-glow: radial-gradient(ellipse at center, hsla(210, 100%, 50%, 0.1), transparent 70%);
 
   --border-subtle: 1px solid hsla(210, 20%, 60%, 0.25);
   --shadow-sm: 0 2px 8px hsla(220, 20%, 40%, 0.1);
   --shadow-md: 0 4px 16px hsla(220, 20%, 40%, 0.12);
   --shadow-lg: 0 8px 32px hsla(220, 20%, 40%, 0.18);
   --shadow-glow: 0 0 20px hsla(210, 100%, 50%, 0.1);
+  --shadow-glow-strong: 0 0 40px hsla(210, 100%, 50%, 0.18);
+  --border-accent: 1px solid hsla(210, 100%, 50%, 0.3);
 }
 
 /* ---- Reset ---- */
@@ -137,8 +144,12 @@ body {
   color: var(--color-text-primary);
   line-height: 1.6;
   min-height: 100vh;
-  transition: background-color var(--transition-slow), color var(--transition-slow);
   overflow-x: hidden;
+}
+
+/* Only animate theme changes after initial mount — suppresses FOUC */
+body.theme-ready {
+  transition: background-color var(--transition-slow), color var(--transition-slow);
 }
 
 a {
@@ -222,7 +233,7 @@ h1, h2, h3, h4, h5, h6 {
   gap: var(--space-sm);
   padding: 0.65rem 1.5rem;
   background: var(--gradient-primary);
-  color: white;
+  color: var(--color-text-inverse); /* black in dark mode, white in light */
   font-weight: 600;
   font-size: 0.9rem;
   border-radius: var(--radius-md);
@@ -235,7 +246,7 @@ h1, h2, h3, h4, h5, h6 {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent, hsla(0, 0%, 100%, 0.15));
+  background: linear-gradient(135deg, transparent, hsla(0, 0%, 0%, 0.08));
   opacity: 0;
   transition: opacity var(--transition-fast);
 }

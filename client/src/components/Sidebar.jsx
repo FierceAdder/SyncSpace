@@ -30,8 +30,6 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
   };
 
   useEffect(() => { fetchGroups(); }, []);
-
-  // Close groups sheet when navigating
   useEffect(() => { setShowGroupsSheet(false); }, [location.pathname]);
 
   const handleCreateGroup = async (e) => {
@@ -82,9 +80,10 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
         onMouseLeave={onMouseLeave}
       >
         <div className="sidebar-inner">
+          {/* Logo — always rendered, text fades via CSS */}
           <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
             <div className="logo-icon">S</div>
-            {!collapsed && <span className="logo-text">SyncSpace</span>}
+            <span className="logo-text sidebar-label">SyncSpace</span>
           </div>
 
           <button className="sidebar-toggle-top" onClick={onToggle} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
@@ -100,16 +99,18 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
                 title={item.label}
               >
                 <item.icon size={18} />
-                {!collapsed && <span>{item.label}</span>}
+                {/* Always rendered — CSS hides when collapsed */}
+                <span className="sidebar-label">{item.label}</span>
               </button>
             ))}
           </nav>
 
           <div className="sidebar-divider" />
 
-          <div className={`sidebar-groups-header ${collapsed ? 'collapsed' : ''}`}>
-            {!collapsed && <span className="section-label">Your Groups</span>}
-            <div className={`group-actions-mini ${collapsed ? 'stacked' : ''}`}>
+          <div className="sidebar-groups-header">
+            <span className="section-label sidebar-label">Your Groups</span>
+            {/* Always in a row — never stacked — fits within 68px */}
+            <div className="group-actions-mini">
               <button className="icon-btn" onClick={() => setShowCreate(true)} title="Create Group">
                 <Plus size={16} />
               </button>
@@ -120,8 +121,8 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
           </div>
 
           <div className="sidebar-groups-list">
-            {groups.length === 0 && !collapsed && (
-              <p className="no-groups">No groups yet. Create or join one!</p>
+            {groups.length === 0 && (
+              <p className="no-groups sidebar-label">No groups yet. Create or join one!</p>
             )}
             {groups.map(g => (
               <button
@@ -131,20 +132,18 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
                 title={g.Group_Name}
               >
                 <Avatar name={g.Group_Name} size={28} />
-                {!collapsed && (
-                  <div className="group-item-info">
-                    <span className="group-item-name">{g.Group_Name}</span>
-                    <span className="group-item-meta">
-                      {g.isOwner && <Crown size={10} />}
-                      <Users size={10} /> {g.memberCount}
-                    </span>
-                  </div>
-                )}
+                {/* Always rendered — CSS hides when collapsed */}
+                <div className="group-item-info sidebar-label">
+                  <span className="group-item-name">{g.Group_Name}</span>
+                  <span className="group-item-meta">
+                    {g.isOwner && <Crown size={10} />}
+                    <Users size={10} /> {g.memberCount}
+                  </span>
+                </div>
               </button>
             ))}
           </div>
         </div>
-
       </aside>
 
       {/* Mobile bottom nav */}
@@ -162,7 +161,6 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
             <span>{item.label}</span>
           </button>
         ))}
-        {/* Groups sheet trigger */}
         <button
           className={`mobile-nav-item ${isGroupActive || showGroupsSheet ? 'active' : ''}`}
           onClick={() => setShowGroupsSheet(s => !s)}
