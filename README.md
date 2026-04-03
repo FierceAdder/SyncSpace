@@ -75,7 +75,7 @@ node server.js
 cd client
 npm run dev
 ```
-*The Client will run on http://localhost:5174 (Or your configured Vite port)*
+*The Client will run on http://localhost:5173 (Or your configured Vite port)*
 
 ## 📂 Project Structure
 
