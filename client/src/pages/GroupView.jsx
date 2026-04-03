@@ -6,7 +6,7 @@ import ResourceCard from '../components/ResourceCard';
 import MemberCard from '../components/MemberCard';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { Copy, RefreshCw, Trash2, LogOut, Plus, Link, Play, FileText, Check } from 'lucide-react';
+import { Copy, RefreshCw, Trash2, LogOut, Plus, Link, Play, FileText, Check, Pencil, Save, X } from 'lucide-react';
 import { copyToClipboard } from '../utils/helpers';
 import './GroupView.css';
 
@@ -26,10 +26,17 @@ export default function GroupView() {
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // Inline group info editing
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+
   // Add resource form
   const [resType, setResType] = useState('link');
   const [resName, setResName] = useState('');
   const [resContent, setResContent] = useState('');
+  const [resDescription, setResDescription] = useState('');
   const [resCategory, setResCategory] = useState('');
   const [addLoading, setAddLoading] = useState(false);
 
@@ -69,7 +76,7 @@ export default function GroupView() {
 
   useEffect(() => {
     if (activeTab === 'members') fetchMembers();
-  }, [activeTab]);
+  }, [activeTab, groupId]);
 
   const handleCopyCode = async () => {
     await copyToClipboard(group.Join_Code);
@@ -138,6 +145,28 @@ export default function GroupView() {
     }
   };
 
+  const handleUpdateGroup = async () => {
+    if (!editName.trim()) return;
+    setEditLoading(true);
+    try {
+      const data = await api.updateGroup(groupId, {
+        Group_Name: editName.trim(),
+        Description: editDesc.trim(),
+      });
+      // Update local state immediately so header reflects changes
+      setGroup(prev => ({
+        ...prev,
+        Group_Name: data.group.Group_Name,
+        Description: data.group.Description,
+      }));
+      toast.success('Group updated!');
+      setIsEditingInfo(false);
+    } catch (err) {
+      toast.error(err.message);
+    }
+    setEditLoading(false);
+  };
+
   const handleAddResource = async (e) => {
     e.preventDefault();
     setAddLoading(true);
@@ -147,12 +176,14 @@ export default function GroupView() {
         Resource_Type: resType,
         Name: resName,
         Content: resContent,
+        Description: resDescription,
         Category: resCategory,
       });
       toast.success('Resource added!');
       setShowAddResource(false);
       setResName('');
       setResContent('');
+      setResDescription('');
       setResCategory('');
       fetchResources();
     } catch (err) {
@@ -175,6 +206,9 @@ export default function GroupView() {
       <div className="group-header glass animate-fade-in-up">
         <div className="group-header-info">
           <h1 className="group-title">{group.Group_Name}</h1>
+          {group.Description && (
+            <p className="group-description">{group.Description}</p>
+          )}
           <div className="group-meta-row">
             <span className="group-meta-item">
               👥 {group.memberCount} {group.memberCount === 1 ? 'member' : 'members'}
@@ -257,15 +291,86 @@ export default function GroupView() {
 
         {activeTab === 'settings' && group.isOwner && (
           <div className="group-settings">
+            {/* Group Info card */}
+            <div className="settings-card glass">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-sm)' }}>
+                <h3>Group Info</h3>
+                {!isEditingInfo ? (
+                  <button
+                    className="btn-ghost"
+                    style={{ padding: '4px 10px', fontSize: '0.8rem', gap: '4px' }}
+                    onClick={() => { setEditName(group.Group_Name); setEditDesc(group.Description || ''); setIsEditingInfo(true); }}
+                  >
+                    <Pencil size={13} /> Edit
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+                    <button
+                      className="btn-primary"
+                      style={{ padding: '4px 14px', fontSize: '0.8rem' }}
+                      onClick={handleUpdateGroup}
+                      disabled={editLoading || !editName.trim()}
+                    >
+                      {editLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={13} /> Save</>}
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      style={{ padding: '4px 8px' }}
+                      onClick={() => setIsEditingInfo(false)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {!isEditingInfo ? (
+                <>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 4 }}>{group.Group_Name}</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                    {group.Description || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>No description set.</span>}
+                  </p>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', marginTop: 'var(--space-sm)' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 6 }}>Group Name</label>
+                    <input
+                      className="input-field"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      placeholder="Group name"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span>Description <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
+                      <span style={{ opacity: 0.5 }}>{editDesc.length}/100</span>
+                    </label>
+                    <input
+                      className="input-field"
+                      value={editDesc}
+                      onChange={e => setEditDesc(e.target.value.slice(0, 100))}
+                      placeholder="What is this group about?"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Join Code card */}
             <div className="settings-card glass">
               <h3>Join Code</h3>
               <p>Share this code with others to let them join your group.</p>
               <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-md)' }}>
-              <button className="btn-secondary" onClick={() => setShowRegenConfirm(true)}>
+                <button className="btn-secondary" onClick={() => setShowRegenConfirm(true)}>
                   <RefreshCw size={16} /> Regenerate Code
                 </button>
               </div>
             </div>
+
+            {/* Danger Zone */}
             <div className="settings-card glass" style={{ borderColor: 'hsla(0, 85%, 60%, 0.2)' }}>
               <h3 style={{ color: 'var(--color-error)' }}>Danger Zone</h3>
               <p>Deleting this group will permanently remove all resources and members.</p>
@@ -308,6 +413,18 @@ export default function GroupView() {
           <div>
             <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>Name</label>
             <input className="input-field" placeholder="Resource name" value={resName} onChange={e => setResName(e.target.value)} required />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Description <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span></span>
+              <span style={{ opacity: 0.5 }}>{resDescription.length}/100</span>
+            </label>
+            <input
+              className="input-field"
+              placeholder="Brief summary of this resource"
+              value={resDescription}
+              onChange={e => setResDescription(e.target.value.slice(0, 100))}
+            />
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>

@@ -19,6 +19,7 @@ router.post('/add',verifyToken,async (req,res)=>{
                 Resource_Type : details.Resource_Type,
                 Content : details.Content,
                 Name : details.Name,
+                Description : (details.Description || '').slice(0, 100),
                 Category : details.Category,
                 Posted_By : userId
             });

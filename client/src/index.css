@@ -88,33 +88,34 @@
 
 /* ---- Light Theme ---- */
 [data-theme="light"] {
-  --color-bg-primary: hsl(220, 20%, 97%);
-  --color-bg-secondary: hsl(220, 18%, 93%);
-  --color-bg-tertiary: hsl(220, 15%, 88%);
-  --color-bg-elevated: hsl(0, 0%, 100%);
-  --color-bg-hover: hsl(220, 18%, 90%);
+  /* Warm off-white — easy on the eyes, not blinding */
+  --color-bg-primary: hsl(220, 16%, 91%);
+  --color-bg-secondary: hsl(220, 14%, 87%);
+  --color-bg-tertiary: hsl(220, 12%, 83%);
+  --color-bg-elevated: hsl(220, 18%, 94%);
+  --color-bg-hover: hsl(220, 15%, 85%);
 
-  --color-glass-bg: hsla(220, 20%, 100%, 0.7);
-  --color-glass-border: hsla(210, 100%, 55%, 0.15);
-  --color-glass-border-hover: hsla(210, 100%, 55%, 0.3);
+  --color-glass-bg: hsla(220, 18%, 93%, 0.8);
+  --color-glass-border: hsla(210, 100%, 50%, 0.14);
+  --color-glass-border-hover: hsla(210, 100%, 50%, 0.28);
 
-  --color-text-primary: hsl(220, 30%, 10%);
-  --color-text-secondary: hsl(215, 15%, 40%);
-  --color-text-tertiary: hsl(215, 12%, 60%);
+  --color-text-primary: hsl(220, 28%, 12%);
+  --color-text-secondary: hsl(215, 14%, 38%);
+  --color-text-tertiary: hsl(215, 10%, 56%);
   --color-text-inverse: hsl(210, 20%, 95%);
 
-  --color-accent: hsl(210, 100%, 45%);
-  --color-accent-hover: hsl(210, 100%, 40%);
-  --color-accent-subtle: hsla(210, 100%, 45%, 0.1);
+  --color-accent: hsl(210, 100%, 44%);
+  --color-accent-hover: hsl(210, 100%, 38%);
+  --color-accent-subtle: hsla(210, 100%, 44%, 0.1);
 
-  --gradient-hero: linear-gradient(135deg, hsl(220, 20%, 97%) 0%, hsl(215, 30%, 92%) 50%, hsl(220, 20%, 97%) 100%);
-  --gradient-card: linear-gradient(145deg, hsla(210, 100%, 55%, 0.04), hsla(190, 95%, 50%, 0.02));
+  --gradient-hero: linear-gradient(135deg, hsl(220, 16%, 91%) 0%, hsl(215, 25%, 86%) 50%, hsl(220, 16%, 91%) 100%);
+  --gradient-card: linear-gradient(145deg, hsla(210, 100%, 50%, 0.04), hsla(190, 95%, 50%, 0.02));
 
-  --border-subtle: 1px solid hsla(210, 20%, 70%, 0.3);
-  --shadow-sm: 0 2px 8px hsla(220, 20%, 50%, 0.08);
-  --shadow-md: 0 4px 16px hsla(220, 20%, 50%, 0.1);
-  --shadow-lg: 0 8px 32px hsla(220, 20%, 50%, 0.15);
-  --shadow-glow: 0 0 20px hsla(210, 100%, 55%, 0.1);
+  --border-subtle: 1px solid hsla(210, 20%, 60%, 0.25);
+  --shadow-sm: 0 2px 8px hsla(220, 20%, 40%, 0.1);
+  --shadow-md: 0 4px 16px hsla(220, 20%, 40%, 0.12);
+  --shadow-lg: 0 8px 32px hsla(220, 20%, 40%, 0.18);
+  --shadow-glow: 0 0 20px hsla(210, 100%, 50%, 0.1);
 }
 
 /* ---- Reset ---- */

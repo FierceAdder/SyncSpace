@@ -33,7 +33,7 @@ const api = {
   updatePassword: (oldPassword, newPassword) => request('/user/update-password', { method: 'PUT', body: JSON.stringify({ oldPassword, newPassword }) }),
   
   // Groups
-  createGroup: (Group_Name) => request('/groups/create', { method: 'POST', body: JSON.stringify({ Group_Name }) }),
+  createGroup: (Group_Name, Description = '') => request('/groups/create', { method: 'POST', body: JSON.stringify({ Group_Name, Description }) }),
   joinGroup: (Join_Code) => request('/groups/join', { method: 'POST', body: JSON.stringify({ Join_Code }) }),
   getMyGroups: () => request('/groups/mine'),
   getGroup: (groupId) => request(`/groups/${groupId}`),
@@ -42,6 +42,7 @@ const api = {
   getMembers: (groupId) => request(`/groups/${groupId}/members`),
   removeMember: (groupId, memberId) => request(`/groups/${groupId}/members/${memberId}`, { method: 'DELETE' }),
   regenerateCode: (groupId) => request(`/groups/${groupId}/regenerate-code`, { method: 'PUT' }),
+  updateGroup: (groupId, body) => request(`/groups/${groupId}/update`, { method: 'PUT', body: JSON.stringify(body) }),
   
   // Resources
   addResource: (body) => request('/resources/add', { method: 'POST', body: JSON.stringify(body) }),

@@ -5,6 +5,7 @@ const ResourceSchema = new mongoose.Schema({
     Resource_Type : String,
     Content : String,
     Name : String,
+    Description : { type: String, maxlength: 100, default: '' },
     Category : String,
     Thumbnail_url : String,
     Original_title : String,

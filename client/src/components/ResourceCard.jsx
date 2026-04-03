@@ -1,12 +1,24 @@
 import { useState } from 'react';
-import { Link, FileText, Play, ExternalLink, ThumbsUp, ThumbsDown, Bookmark, Trash2 } from 'lucide-react';
+import { Link, FileText, Play, ExternalLink, ThumbsUp, ThumbsDown, Bookmark, Trash2, AlertTriangle, X } from 'lucide-react';
 import { isBookmarked, toggleBookmark } from '../utils/bookmarks';
 import Avatar from './Avatar';
 import './ResourceCard.css';
 
+function DeleteConfirmInline({ onConfirm, onCancel }) {
+  return (
+    <div className="delete-confirm-inline">
+      <AlertTriangle size={13} />
+      <span>Delete this resource?</span>
+      <button className="delete-confirm-yes" onClick={onConfirm}>Yes</button>
+      <button className="delete-confirm-no" onClick={onCancel}><X size={12} /></button>
+    </div>
+  );
+}
+
 export default function ResourceCard({ resource, onVote, onDelete, canDelete, showGroup = false, style }) {
   const [bookmarked, setBookmarked] = useState(isBookmarked(resource._id));
   const [voteAnim, setVoteAnim] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleBookmark = () => {
     const result = toggleBookmark(resource._id);
@@ -18,6 +30,10 @@ export default function ResourceCard({ resource, onVote, onDelete, canDelete, sh
     setTimeout(() => setVoteAnim(null), 400);
     onVote?.(resource._id, type);
   };
+
+  const handleDeleteClick = () => setConfirmDelete(true);
+  const handleDeleteConfirm = () => { setConfirmDelete(false); onDelete?.(resource._id); };
+  const handleDeleteCancel = () => setConfirmDelete(false);
 
   const typeIcon = () => {
     switch (resource.Resource_Type?.toLowerCase()) {
@@ -46,6 +62,9 @@ export default function ResourceCard({ resource, onVote, onDelete, canDelete, sh
           )}
         </div>
         <h4 className="resource-name">{resource.Name || resource.Original_title || 'Untitled'}</h4>
+        {resource.Description && (
+          <p className="resource-description">{resource.Description}</p>
+        )}
         {resource.Original_title && resource.Name && resource.Original_title !== resource.Name && (
           <p className="resource-og-title">{resource.Original_title}</p>
         )}
@@ -67,21 +86,27 @@ export default function ResourceCard({ resource, onVote, onDelete, canDelete, sh
             <span>{resource.Posted_By?.UserName || 'Unknown'}</span>
           </div>
           <div className="resource-actions">
-            <button className={`vote-btn ${voteAnim === 'up' ? 'vote-pulse' : ''}`} onClick={() => handleVote('up')} title="Upvote">
-              <ThumbsUp size={14} />
-              <span>{upvoteCount}</span>
-            </button>
-            <button className={`vote-btn ${voteAnim === 'down' ? 'vote-pulse' : ''}`} onClick={() => handleVote('down')} title="Downvote">
-              <ThumbsDown size={14} />
-              <span>{downvoteCount}</span>
-            </button>
-            <button className={`bookmark-btn ${bookmarked ? 'bookmarked' : ''}`} onClick={handleBookmark} title="Bookmark">
-              <Bookmark size={14} fill={bookmarked ? 'currentColor' : 'none'} />
-            </button>
-            {canDelete && (
-              <button className="delete-btn" onClick={() => onDelete?.(resource._id)} title="Delete">
-                <Trash2 size={14} />
-              </button>
+            {confirmDelete ? (
+              <DeleteConfirmInline onConfirm={handleDeleteConfirm} onCancel={handleDeleteCancel} />
+            ) : (
+              <>
+                <button className={`vote-btn ${voteAnim === 'up' ? 'vote-pulse' : ''}`} onClick={() => handleVote('up')} title="Upvote">
+                  <ThumbsUp size={14} />
+                  <span>{upvoteCount}</span>
+                </button>
+                <button className={`vote-btn ${voteAnim === 'down' ? 'vote-pulse' : ''}`} onClick={() => handleVote('down')} title="Downvote">
+                  <ThumbsDown size={14} />
+                  <span>{downvoteCount}</span>
+                </button>
+                <button className={`bookmark-btn ${bookmarked ? 'bookmarked' : ''}`} onClick={handleBookmark} title="Bookmark">
+                  <Bookmark size={14} fill={bookmarked ? 'currentColor' : 'none'} />
+                </button>
+                {canDelete && (
+                  <button className="delete-btn" onClick={handleDeleteClick} title="Delete">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -26,6 +26,7 @@ router.post("/create", verifyToken, async (req, res) => {
         const group = new Group({
             Group_Owner_Id: req.user.id,
             Group_Name: details.Group_Name,
+            Description: (details.Description || '').slice(0, 100),
             Members: [req.user.id],
             Join_Code: generateJoinCode()
         });
@@ -52,6 +53,28 @@ router.post("/join", verifyToken, async (req, res) => {
         await Group.findByIdAndUpdate(groupId, { $addToSet: { Members: req.user.id } });
         await User.findByIdAndUpdate(req.user.id, { $addToSet: { Groups_Part_Of: groupId } });
         res.status(200).json({ message: "Joined group succesfully." });
+    } catch (err) {
+        console.log("Error : ", err);
+        res.status(500).json({ message: "Error Occured" });
+    }
+});
+
+router.put("/:groupId/update", verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const groupId = req.params.groupId;
+        const { Group_Name, Description } = req.body;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+        if (group.Group_Owner_Id.toString() !== userId)
+            return res.status(403).json({ message: "Only the owner can edit this group." });
+
+        if (Group_Name && Group_Name.trim()) group.Group_Name = Group_Name.trim();
+        if (Description !== undefined) group.Description = Description.slice(0, 100);
+
+        await group.save();
+        res.status(200).json({ message: "Group updated successfully.", group: { Group_Name: group.Group_Name, Description: group.Description } });
     } catch (err) {
         console.log("Error : ", err);
         res.status(500).json({ message: "Error Occured" });
@@ -113,12 +136,13 @@ router.get("/mine", verifyToken, async (req, res) => {
 
         const groups = await Group.find(
             { _id: { $in: user.Groups_Part_Of } },
-            { Join_Code: 1, Group_Name: 1, Group_Owner_Id: 1, Members: 1 }
+            { Join_Code: 1, Group_Name: 1, Description: 1, Group_Owner_Id: 1, Members: 1 }
         ).populate("Group_Owner_Id", "UserName");
 
         const result = groups.map(g => ({
             _id: g._id,
             Group_Name: g.Group_Name,
+            Description: g.Description || '',
             Join_Code: g.Join_Code,
             Owner: {
                 _id: g.Group_Owner_Id?._id,
@@ -156,6 +180,7 @@ router.get("/:groupId", verifyToken, async (req, res) => {
             group: {
                 _id: group._id,
                 Group_Name: group.Group_Name,
+                Description: group.Description || '',
                 Join_Code: group.Join_Code,
                 Owner: {
                     _id: group.Group_Owner_Id?._id,

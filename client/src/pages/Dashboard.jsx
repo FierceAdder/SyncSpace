@@ -50,7 +50,7 @@ export default function Dashboard() {
     { icon: FolderOpen, label: 'Groups Owned', value: user?.Groups_Owned || 0, color: 'var(--color-accent)' },
     { icon: Users, label: 'Groups Joined', value: user?.Groups_Part_Of || 0, color: 'var(--color-cyan)' },
     { icon: Activity, label: 'Recent Activity', value: resources.length, color: 'var(--color-success)' },
-    { icon: TrendingUp, label: 'Total Votes', value: resources.reduce((sum, r) => sum + (r.Upvotes?.length || 0), 0), color: 'var(--color-warning)' },
+    { icon: TrendingUp, label: 'Total Votes', value: resources.reduce((sum, r) => sum + (r.Upvotes?.length || 0) + (r.Downvotes?.length || 0), 0), color: 'var(--color-warning)' },
   ];
 
   return (
