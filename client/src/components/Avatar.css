@@ -1,0 +1,18 @@
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  color: white;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  user-select: none;
+  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.2);
+  transition: transform var(--transition-fast);
+}
+
+.avatar:hover {
+  transform: scale(1.08);
+}

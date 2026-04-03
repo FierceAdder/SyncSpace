@@ -1,0 +1,133 @@
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  max-width: 700px;
+}
+
+.profile-card {
+  padding: var(--space-2xl);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.profile-card-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.profile-card-info {
+  flex: 1;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile-name-row h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.edit-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.edit-name-row .input-field {
+  max-width: 250px;
+}
+
+.profile-email {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  margin-top: var(--space-xs);
+}
+
+.profile-stats-row {
+  display: flex;
+  gap: var(--space-2xl);
+  padding-top: var(--space-lg);
+  border-top: var(--border-subtle);
+}
+
+.profile-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.profile-stat-value {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--color-text-primary);
+  font-family: var(--font-heading);
+}
+
+.profile-stat-label {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+}
+
+.profile-section {
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+}
+
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.profile-section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.profile-section-header p {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: var(--border-subtle);
+}
+
+@media (max-width: 768px) {
+  .profile-card-top {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profile-stats-row {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .profile-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -6,6 +6,8 @@ const ResourceSchema = new mongoose.Schema({
     Content : String,
     Name : String,
     Category : String,
+    Thumbnail_url : String,
+    Original_title : String,
     Upvotes : [{type : mongoose.Schema.Types.ObjectId,ref : 'User',default : []}],
     Downvotes : [{type : mongoose.Schema.Types.ObjectId,ref : 'User',default : []}],
     Posted_By : {type : mongoose.Schema.Types.ObjectId,ref : 'User'}

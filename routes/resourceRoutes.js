@@ -3,6 +3,7 @@ const verifyToken=require("../middleware/auth");
 const Resource=require("../models/Resources");
 const User = require("../models/User");
 const Group = require("../models/Group");
+const ogs = require('open-graph-scraper');
 
 const router=express.Router();
 
@@ -21,6 +22,27 @@ router.post('/add',verifyToken,async (req,res)=>{
                 Category : details.Category,
                 Posted_By : userId
             });
+            if(details.Resource_Type.toLowerCase()==="link" || details.Resource_Type.toLowerCase()==="video"){
+                try{
+                    const ogData = await ogs({ url: details.Content });
+                    if (ogData && ogData.result) {
+                        newResource.Thumbnail_url = ogData.result.ogImage ? ogData.result.ogImage[0].url : '';
+                        newResource.Original_title = ogData.result.ogTitle || '';
+                    }
+                }catch(err){
+                    console.log("OG Scraping Error : ",err);
+                }
+                if(!newResource.Thumbnail_url){
+                    try{
+                        const urlObj = new URL(details.Content);
+                        newResource.Thumbnail_url = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}`;
+                    }catch(err){
+                        console.log("Favicon Fetch Error : ",err);
+                    }
+                    
+                }
+            }
+
             await newResource.save();
             res.status(201).json({
                 "message" : "Resource added successfully"
