@@ -54,7 +54,10 @@ io.on('connection', (socket) => {
     });
 });
 
-app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5174"] }));
+const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : ["http://localhost:5173", "http://localhost:5174"];
+app.use(cors({ origin: allowedOrigins }));
 const MONGO_URI = process.env.MONGO_URI;
 app.use(express.json({ limit: '10mb' }));
 app.use('/user', userRoutes);
@@ -89,6 +92,15 @@ app.get('/stats', async (req, res) => {
     }
 });
 
-server.listen(3000, () => {
-    console.log("Server live on port 3000 (with Socket.io)");
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'client', 'dist')));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+    });
+}
+
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server live on port ${PORT} (with Socket.io)`);
 });

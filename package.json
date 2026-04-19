@@ -2,9 +2,10 @@
   "name": "syncspace",
   "version": "1.0.0",
   "main": "server.js",
-  "scripts": {
-    "test": "npm run dev",
-    "start": "node server.js"
+    "scripts": {
+  "test": "npm run dev",
+  "start": "node server.js",
+  "build": "cd client && npm install && npm run build"
   },
   "author": "",
   "license": "ISC",
