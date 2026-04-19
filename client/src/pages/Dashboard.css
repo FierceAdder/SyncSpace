@@ -57,6 +57,34 @@
   font-weight: 500;
 }
 
+/* Interactive stat cards */
+.stat-card-interactive {
+  cursor: pointer;
+  position: relative;
+}
+
+.stat-card-interactive:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-card-interactive:active {
+  transform: scale(0.98);
+}
+
+.stat-card-hint {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--color-text-tertiary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.stat-card-interactive:hover .stat-card-hint {
+  opacity: 1;
+}
+
 .section-title {
   font-size: 1.2rem;
   font-weight: 600;

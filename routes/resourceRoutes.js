@@ -4,6 +4,7 @@ const Resource=require("../models/Resources");
 const User = require("../models/User");
 const Group = require("../models/Group");
 const ogs = require('open-graph-scraper');
+const { generatePresignedUploadUrl, generatePresignedDownloadUrl } = require('../utils/s3');
 
 const router=express.Router();
 
@@ -23,6 +24,19 @@ router.post('/add',verifyToken,async (req,res)=>{
                 Category : details.Category,
                 Posted_By : userId
             });
+
+            // Article type: save rich HTML body
+            if(details.Resource_Type?.toLowerCase() === 'article'){
+                newResource.Article_Body = details.Article_Body || '';
+            }
+
+            // File type: save S3 metadata
+            if(details.Resource_Type?.toLowerCase() === 'file'){
+                newResource.File_Key = details.File_Key || '';
+                newResource.File_Size = details.File_Size || 0;
+                newResource.File_Name = details.File_Name || '';
+            }
+
             if(details.Resource_Type.toLowerCase()==="link" || details.Resource_Type.toLowerCase()==="video"){
                 try{
                     const ogData = await ogs({ url: details.Content });
@@ -61,6 +75,48 @@ router.post('/add',verifyToken,async (req,res)=>{
     }
 });
 
+// Generate presigned upload URL for file resources
+router.post('/presign-upload', verifyToken, async (req, res) => {
+    try {
+        const { fileName, contentType, groupId } = req.body;
+        
+        if (!fileName || !contentType) {
+            return res.status(400).json({ message: "fileName and contentType are required." });
+        }
+
+        const key = `resources/${groupId}/${Date.now()}-${fileName}`;
+        const uploadUrl = await generatePresignedUploadUrl(key, contentType);
+
+        res.status(200).json({
+            uploadUrl,
+            key,
+            message: "Presigned upload URL generated."
+        });
+    } catch (err) {
+        console.log("Error : ", err);
+        res.status(500).json({ message: "Error Occured" });
+    }
+});
+
+// Generate presigned download URL for a file resource
+router.get('/:resourceId/presign-download', verifyToken, async (req, res) => {
+    try {
+        const resource = await Resource.findById(req.params.resourceId);
+        if (!resource || !resource.File_Key) {
+            return res.status(404).json({ message: "File not found." });
+        }
+
+        const downloadUrl = await generatePresignedDownloadUrl(resource.File_Key);
+        res.status(200).json({
+            downloadUrl,
+            fileName: resource.File_Name
+        });
+    } catch (err) {
+        console.log("Error : ", err);
+        res.status(500).json({ message: "Error Occured" });
+    }
+});
+
 router.get('/recents', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -73,9 +129,9 @@ router.get('/recents', verifyToken, async (req, res) => {
         const resources = await Resource.find({ 
             Group_Posted_In: { $in: user.Groups_Part_Of } 
         })
-        .sort({ _id: -1 }) 
+        .sort({ createdAt: -1, _id: -1 }) 
         .limit(10)
-        .populate('Posted_By', 'UserName')
+        .populate('Posted_By', 'UserName Avatar_Url')
         .populate('Group_Posted_In', 'Group_Name');
 
         res.status(200).json({ resources });
@@ -89,6 +145,7 @@ router.get('/search', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const searchQuery = req.query.q; 
+        const sortBy = req.query.sort || 'relevance'; // 'relevance', 'newest', 'upvotes'
         
         if (!searchQuery) {
             return res.status(400).json({ message: "Search query is required." });
@@ -99,18 +156,63 @@ router.get('/search', verifyToken, async (req, res) => {
             return res.status(404).json({ message: "User not found." });
         }
 
-        const searchRegex = new RegExp(searchQuery, 'i');
+        let findQuery;
+        let sortOptions = {};
 
-        const resources = await Resource.find({
-            Group_Posted_In: { $in: user.Groups_Part_Of }, 
-            $or: [                                         
-                { Name: { $regex: searchRegex } },
-                { Category: { $regex: searchRegex } },
-                { Content: { $regex: searchRegex } }
-            ]
-        })
-        .populate('Posted_By', 'UserName')
-        .populate('Group_Posted_In', 'Group_Name');
+        // Try text index search first for speed, fall back to regex
+        try {
+            findQuery = {
+                Group_Posted_In: { $in: user.Groups_Part_Of },
+                $text: { $search: searchQuery }
+            };
+
+            // Test if text index works
+            const testCount = await Resource.countDocuments(findQuery);
+            
+            if (sortBy === 'relevance') {
+                sortOptions = { score: { $meta: 'textScore' } };
+            } else if (sortBy === 'newest') {
+                sortOptions = { createdAt: -1, _id: -1 };
+            }
+            // upvotes sorting handled after fetch
+        } catch {
+            // Fallback to regex search if text index not available
+            const searchRegex = new RegExp(searchQuery, 'i');
+            findQuery = {
+                Group_Posted_In: { $in: user.Groups_Part_Of },
+                $or: [
+                    { Name: { $regex: searchRegex } },
+                    { Category: { $regex: searchRegex } },
+                    { Content: { $regex: searchRegex } },
+                    { Description: { $regex: searchRegex } },
+                    { Article_Body: { $regex: searchRegex } }
+                ]
+            };
+            if (sortBy === 'newest') {
+                sortOptions = { createdAt: -1, _id: -1 };
+            }
+        }
+
+        let queryBuilder = Resource.find(findQuery);
+        
+        if (sortBy === 'relevance' && findQuery.$text) {
+            queryBuilder = queryBuilder
+                .select({ score: { $meta: 'textScore' } })
+                .sort({ score: { $meta: 'textScore' } });
+        } else if (Object.keys(sortOptions).length > 0) {
+            queryBuilder = queryBuilder.sort(sortOptions);
+        }
+
+        let resources = await queryBuilder
+            .populate('Posted_By', 'UserName Avatar_Url')
+            .populate('Group_Posted_In', 'Group_Name');
+
+        // Sort by upvotes client-side (can't easily sort by array length in MongoDB)
+        if (sortBy === 'upvotes') {
+            resources = resources.sort((a, b) => 
+                (b.Upvotes?.length || 0) - (a.Upvotes?.length || 0)
+            );
+        }
 
         res.status(200).json({ resources });
     } catch (err) {
@@ -125,7 +227,9 @@ router.get("/:groupId",verifyToken,async (req,res)=>{
         const userId=req.user.id;
         const isMember=(await User.exists({_id : userId,Groups_Part_Of : groupId}));
         if(isMember){
-            const resources = await Resource.find({ Group_Posted_In: groupId }).populate('Posted_By', 'UserName');
+            const resources = await Resource.find({ Group_Posted_In: groupId })
+                .populate('Posted_By', 'UserName Avatar_Url')
+                .sort({ createdAt: -1, _id: -1 });
             res.status(200).json({
                 resources
             });

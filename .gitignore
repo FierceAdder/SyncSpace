@@ -1,3 +1,7 @@
 .env
 package-lock.json
 node_modules
+.DS_Store
+Ideas.txt
+.DS_Store
+.DS_Store

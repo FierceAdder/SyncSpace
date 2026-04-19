@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sun, Moon, User, LogOut, ExternalLink, FileText, Link as LinkIcon, Play, X } from 'lucide-react';
+import { Search, Sun, Moon, User, LogOut, ExternalLink, FileText, Link as LinkIcon, Play, X, PenLine, FileIcon, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/api';
@@ -14,11 +14,24 @@ export default function Header({ collapsed }) {
   const [showResults, setShowResults] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
   const profileRef = useRef(null);
   const debounceRef = useRef(null);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+
+  // ⌘K / Ctrl+K shortcut to focus search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Dynamic search as user types (debounced 300ms)
   useEffect(() => {
@@ -64,10 +77,17 @@ export default function Header({ collapsed }) {
     navigate('/');
   };
 
+  const handleViewAllResults = () => {
+    setShowResults(false);
+    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+  };
+
   const getTypeIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'link': return <LinkIcon size={14} />;
       case 'video': return <Play size={14} />;
+      case 'article': return <PenLine size={14} />;
+      case 'file': return <FileIcon size={14} />;
       default: return <FileText size={14} />;
     }
   };
@@ -83,11 +103,13 @@ export default function Header({ collapsed }) {
       <div className="header-search" ref={searchRef}>
         <Search size={16} className="search-icon" />
         <input
+          ref={searchInputRef}
           className="search-input"
           placeholder="Search resources… (⌘K)"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onFocus={() => { if (searchQuery.trim() && searchResults.length > 0) setShowResults(true); }}
+          onKeyDown={e => { if (e.key === 'Enter' && searchQuery.trim()) handleViewAllResults(); }}
         />
         {searchQuery && (
           <button className="search-input-clear" onClick={clearSearch}>
@@ -102,7 +124,7 @@ export default function Header({ collapsed }) {
             <div className="search-dropdown-header">
               <span>{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}</span>
             </div>
-            {searchResults.slice(0, 8).map(r => (
+            {searchResults.slice(0, 6).map(r => (
               <button
                 key={r._id}
                 className="search-result-item"
@@ -128,11 +150,9 @@ export default function Header({ collapsed }) {
                 )}
               </button>
             ))}
-            {searchResults.length > 8 && (
-              <div className="search-dropdown-footer">
-                +{searchResults.length - 8} more results
-              </div>
-            )}
+            <button className="search-view-all" onClick={handleViewAllResults}>
+              View all results <ArrowRight size={14} />
+            </button>
           </div>
         )}
         {showResults && searchQuery.trim() && !searchLoading && searchResults.length === 0 && (
@@ -149,13 +169,13 @@ export default function Header({ collapsed }) {
 
         <div className="profile-menu-wrapper" ref={profileRef}>
           <button className="profile-btn" onClick={() => setShowProfile(!showProfile)}>
-            <Avatar name={user?.Username} size={32} />
+            <Avatar name={user?.Username} src={user?.Avatar_Url} size={32} />
           </button>
 
           {showProfile && (
               <div className="profile-dropdown glass">
                 <div className="profile-dropdown-header">
-                  <Avatar name={user?.Username} size={40} />
+                  <Avatar name={user?.Username} src={user?.Avatar_Url} size={40} />
                   <div>
                     <div className="profile-dropdown-name">{user?.Username}</div>
                     <div className="profile-dropdown-email">{user?.Email}</div>

@@ -1,91 +1,168 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
+import { useEffect, useState, useRef } from 'react';
+import { Users, Crown, FileText, ThumbsUp, TrendingUp } from 'lucide-react';
 import api from '../api/api';
 import ResourceCard from '../components/ResourceCard';
-import { TrendingUp, Users, FolderOpen, Activity } from 'lucide-react';
+import StatsDetailModal from '../components/StatsDetailModal';
+import ArticleViewer from '../components/ArticleViewer';
+import { isBookmarked, toggleBookmark } from '../utils/bookmarks';
+import { useToast } from '../context/ToastContext';
 import './Dashboard.css';
 
-export default function Dashboard() {
-  const [resources, setResources] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const toast = useToast();
+function AnimatedCounter({ target, duration = 1200 }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const hasAnimated = useRef(false);
 
   useEffect(() => {
-    fetchRecents();
-  }, []);
+    if (hasAnimated.current) return;
 
-  const fetchRecents = async () => {
-    try {
-      const data = await api.getRecentResources();
-      setResources(data.resources || []);
-    } catch (err) {
-      toast.error('Failed to load recent resources');
-    }
-    setLoading(false);
-  };
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !hasAnimated.current) {
+        hasAnimated.current = true;
+        const start = Date.now();
+        const tick = () => {
+          const elapsed = Date.now() - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+          setCount(Math.round(eased * target));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.5 });
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return <span ref={ref}>{count}</span>;
+}
+
+export default function Dashboard() {
+  const toast = useToast();
+  const [resources, setResources] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [statsModal, setStatsModal] = useState(null); // 'joined' | 'owned' | null
+  const [viewingArticle, setViewingArticle] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resData, profData] = await Promise.all([
+          api.getRecentResources(),
+          api.getProfile()
+        ]);
+        setResources(resData.resources || []);
+        setProfile(profData.Profile);
+      } catch (err) {
+        console.error(err);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   const handleVote = async (resourceId, type) => {
     try {
       if (type === 'up') await api.upvoteResource(resourceId);
       else await api.downvoteResource(resourceId);
-      fetchRecents();
-    } catch (err) {
+      const data = await api.getRecentResources();
+      setResources(data.resources || []);
+    } catch {
       toast.error('Vote failed');
     }
   };
 
-  const handleDelete = async (resourceId) => {
+  const handleDownload = async (resourceId) => {
     try {
-      await api.deleteResource(resourceId);
-      toast.success('Resource deleted');
-      fetchRecents();
-    } catch (err) {
-      toast.error(err.message);
+      const data = await api.getPresignedDownloadUrl(resourceId);
+      window.open(data.downloadUrl, '_blank');
+    } catch {
+      toast.error('Download failed');
     }
   };
 
+  if (loading) {
+    return <div className="loading-center"><div className="spinner spinner-lg" /></div>;
+  }
+
   const stats = [
-    { icon: FolderOpen, label: 'Groups Owned', value: user?.Groups_Owned || 0, color: 'var(--color-accent)' },
-    { icon: Users, label: 'Groups Joined', value: user?.Groups_Part_Of || 0, color: 'var(--color-cyan)' },
-    { icon: Activity, label: 'Recent Activity', value: resources.length, color: 'var(--color-success)' },
-    { icon: TrendingUp, label: 'Total Votes', value: resources.reduce((sum, r) => sum + (r.Upvotes?.length || 0) + (r.Downvotes?.length || 0), 0), color: 'var(--color-warning)' },
+    {
+      icon: Users,
+      label: 'Groups Joined',
+      value: profile?.Groups_Part_Of || 0,
+      color: 'hsl(210, 100%, 55%)',
+      bg: 'hsla(210, 100%, 55%, 0.12)',
+      clickable: true,
+      onClick: () => setStatsModal('joined'),
+    },
+    {
+      icon: Crown,
+      label: 'Groups Owned',
+      value: profile?.Groups_Owned || 0,
+      color: 'hsl(38, 95%, 55%)',
+      bg: 'hsla(38, 95%, 55%, 0.12)',
+      clickable: true,
+      onClick: () => setStatsModal('owned'),
+    },
+    {
+      icon: FileText,
+      label: 'Resources Shared',
+      value: profile?.Resources_Count || 0,
+      color: 'hsl(280, 80%, 60%)',
+      bg: 'hsla(280, 80%, 60%, 0.12)',
+    },
+    {
+      icon: ThumbsUp,
+      label: 'Total Upvotes',
+      value: profile?.Total_Upvotes || 0,
+      color: 'hsl(142, 71%, 45%)',
+      bg: 'hsla(142, 71%, 45%, 0.12)',
+    },
   ];
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header animate-fade-in-up">
-        <div>
-          <h1 className="page-title">Welcome back, <span className="text-gradient">{user?.Username || 'User'}</span></h1>
-          <p className="page-subtitle">Here's what's happening across your groups</p>
-        </div>
+      <div className="animate-fade-in-up">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-subtitle">Welcome back, {profile?.Username} 👋</p>
       </div>
 
-      {/* Stats */}
-      <div className="stats-grid">
+      <div className="stats-grid animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
         {stats.map((s, i) => (
-          <div key={s.label} className="stat-card glass animate-fade-in-up" style={{ animationDelay: `${i * 0.08}s` }}>
-            <div className="stat-icon" style={{ background: `${s.color}18`, color: s.color }}>
+          <div
+            key={s.label}
+            className={`stat-card glass ${s.clickable ? 'stat-card-interactive' : ''}`}
+            style={{ animationDelay: `${i * 0.08}s` }}
+            onClick={s.onClick}
+            role={s.clickable ? 'button' : undefined}
+            tabIndex={s.clickable ? 0 : undefined}
+          >
+            <div className="stat-icon" style={{ background: s.bg, color: s.color }}>
               <s.icon size={20} />
             </div>
             <div className="stat-info">
-              <span className="stat-value">{s.value}</span>
+              <span className="stat-value">
+                <AnimatedCounter target={s.value} />
+              </span>
               <span className="stat-label">{s.label}</span>
             </div>
+            {s.clickable && (
+              <div className="stat-card-hint">
+                <TrendingUp size={12} />
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Recent Resources */}
-      <div className="dashboard-section animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
         <h2 className="section-title">Recent Resources</h2>
-        {loading ? (
-          <div className="loading-center"><div className="spinner spinner-lg" /></div>
-        ) : resources.length === 0 ? (
+        {resources.length === 0 ? (
           <div className="empty-state glass">
-            <FolderOpen size={48} strokeWidth={1} />
-            <h3>No resources yet</h3>
+            <FileText size={48} strokeWidth={1} />
+            <h3>No recent resources</h3>
             <p>Join a group and start sharing resources to see them here.</p>
           </div>
         ) : (
@@ -95,15 +172,32 @@ export default function Dashboard() {
                 key={r._id}
                 resource={r}
                 onVote={handleVote}
-                onDelete={handleDelete}
-                canDelete={true}
-                showGroup={true}
+                showGroup
+                onViewArticle={(res) => setViewingArticle(res)}
+                onDownload={handleDownload}
                 style={{ animationDelay: `${i * 0.06}s` }}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Interactive Stats Modal */}
+      <StatsDetailModal
+        isOpen={!!statsModal}
+        onClose={() => setStatsModal(null)}
+        statType={statsModal === 'owned' ? 'owned' : 'joined'}
+      />
+
+      {/* Article Viewer */}
+      <ArticleViewer
+        resource={viewingArticle}
+        isOpen={!!viewingArticle}
+        onClose={() => setViewingArticle(null)}
+        onVote={handleVote}
+        onBookmark={(id) => toggleBookmark(id)}
+        bookmarked={viewingArticle ? isBookmarked(viewingArticle._id) : false}
+      />
     </div>
   );
 }

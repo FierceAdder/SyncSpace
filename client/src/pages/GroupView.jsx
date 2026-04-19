@@ -1,19 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 import ResourceCard from '../components/ResourceCard';
 import MemberCard from '../components/MemberCard';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { Copy, RefreshCw, Trash2, LogOut, Plus, Link, Play, FileText, Check, Pencil, Save, X } from 'lucide-react';
+import ArticleEditor from '../components/ArticleEditor';
+import ArticleViewer from '../components/ArticleViewer';
+import FileUploadZone from '../components/FileUploadZone';
+import CommentThread from '../components/CommentThread';
+import { Copy, RefreshCw, Trash2, LogOut, Plus, Link, Play, FileText, Check, Pencil, Save, X, PenLine, FileIcon, MessageCircle } from 'lucide-react';
 import { copyToClipboard } from '../utils/helpers';
+import { isBookmarked, toggleBookmark } from '../utils/bookmarks';
 import './GroupView.css';
 
 export default function GroupView() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
 
   const [group, setGroup] = useState(null);
   const [resources, setResources] = useState([]);
@@ -24,6 +31,7 @@ export default function GroupView() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
   const [codeCopied, setCodeCopied] = useState(false);
 
   // Inline group info editing
@@ -39,6 +47,18 @@ export default function GroupView() {
   const [resDescription, setResDescription] = useState('');
   const [resCategory, setResCategory] = useState('');
   const [addLoading, setAddLoading] = useState(false);
+
+  // Article editor
+  const [articleBody, setArticleBody] = useState('');
+
+  // File upload
+  const [fileData, setFileData] = useState(null);
+
+  // Article viewer
+  const [viewingArticle, setViewingArticle] = useState(null);
+
+  // Chat modal
+  const [chatResource, setChatResource] = useState(null);
 
   useEffect(() => {
     fetchGroup();
@@ -119,6 +139,7 @@ export default function GroupView() {
     try {
       await api.removeMember(groupId, memberId);
       toast.success('Member removed');
+      setMemberToRemove(null);
       fetchMembers();
     } catch (err) {
       toast.error(err.message);
@@ -153,7 +174,6 @@ export default function GroupView() {
         Group_Name: editName.trim(),
         Description: editDesc.trim(),
       });
-      // Update local state immediately so header reflects changes
       setGroup(prev => ({
         ...prev,
         Group_Name: data.group.Group_Name,
@@ -167,24 +187,52 @@ export default function GroupView() {
     setEditLoading(false);
   };
 
+  const handleDownload = async (resourceId) => {
+    try {
+      const data = await api.getPresignedDownloadUrl(resourceId);
+      window.open(data.downloadUrl, '_blank');
+    } catch (err) {
+      toast.error('Download failed');
+    }
+  };
+
   const handleAddResource = async (e) => {
     e.preventDefault();
     setAddLoading(true);
     try {
-      await api.addResource({
+      const body = {
         groupToPost: groupId,
         Resource_Type: resType,
         Name: resName,
         Content: resContent,
         Description: resDescription,
         Category: resCategory,
-      });
+      };
+
+      // Article
+      if (resType === 'article') {
+        body.Article_Body = articleBody;
+        body.Content = ''; // no URL for articles
+      }
+
+      // File
+      if (resType === 'file' && fileData) {
+        body.File_Key = fileData.File_Key;
+        body.File_Name = fileData.File_Name;
+        body.File_Size = fileData.File_Size;
+        body.Content = ''; // no URL for files
+      }
+
+      await api.addResource(body);
       toast.success('Resource added!');
       setShowAddResource(false);
       setResName('');
       setResContent('');
       setResDescription('');
       setResCategory('');
+      setArticleBody('');
+      setFileData(null);
+      setResType('link');
       fetchResources();
     } catch (err) {
       toast.error(err.message);
@@ -267,6 +315,9 @@ export default function GroupView() {
                     onVote={handleVote}
                     onDelete={handleDeleteResource}
                     canDelete={true}
+                    onViewArticle={(res) => setViewingArticle(res)}
+                    onViewChat={(res) => setChatResource(res)}
+                    onDownload={handleDownload}
                     style={{ animationDelay: `${i * 0.06}s` }}
                   />
                 ))}
@@ -282,7 +333,7 @@ export default function GroupView() {
                 key={m._id}
                 member={m}
                 isGroupOwner={group.isOwner}
-                onRemove={handleRemoveMember}
+                onRemove={() => setMemberToRemove(m)}
                 style={{ animation: `fadeInUp 0.4s ease both`, animationDelay: `${i * 0.06}s` }}
               />
             ))}
@@ -388,7 +439,7 @@ export default function GroupView() {
       </button>
 
       {/* Add Resource Modal */}
-      <Modal isOpen={showAddResource} onClose={() => setShowAddResource(false)} title="Add a Resource" size="md">
+      <Modal isOpen={showAddResource} onClose={() => setShowAddResource(false)} title="Add a Resource" size={resType === 'article' ? 'lg' : 'md'}>
         <form onSubmit={handleAddResource} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
           <div>
             <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '8px', display: 'block' }}>Type</label>
@@ -397,6 +448,8 @@ export default function GroupView() {
                 { value: 'link', icon: Link, label: 'Link' },
                 { value: 'video', icon: Play, label: 'Video' },
                 { value: 'note', icon: FileText, label: 'Note' },
+                { value: 'article', icon: PenLine, label: 'Article' },
+                { value: 'file', icon: FileIcon, label: 'File' },
               ].map(t => (
                 <button
                   key={t.value}
@@ -426,16 +479,38 @@ export default function GroupView() {
               onChange={e => setResDescription(e.target.value.slice(0, 100))}
             />
           </div>
-          <div>
-            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>
-              {resType === 'note' ? 'Content' : 'URL'}
-            </label>
-            {resType === 'note' ? (
+
+          {/* Content field — varies by type */}
+          {resType === 'article' ? (
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>
+                Article Content
+              </label>
+              <ArticleEditor value={articleBody} onChange={setArticleBody} />
+            </div>
+          ) : resType === 'file' ? (
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>
+                Upload File
+              </label>
+              <FileUploadZone
+                groupId={groupId}
+                onUploadComplete={(data) => setFileData(data)}
+                onError={(msg) => toast.error(msg)}
+              />
+            </div>
+          ) : resType === 'note' ? (
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>Content</label>
               <textarea className="input-field" placeholder="Write your note…" value={resContent} onChange={e => setResContent(e.target.value)} rows={4} style={{ resize: 'vertical' }} required />
-            ) : (
+            </div>
+          ) : (
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>URL</label>
               <input className="input-field" placeholder="https://..." value={resContent} onChange={e => setResContent(e.target.value)} required />
-            )}
-          </div>
+            </div>
+          )}
+
           <div>
             <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>Category</label>
             <input className="input-field" placeholder="e.g., Lecture Notes, Tutorials" value={resCategory} onChange={e => setResCategory(e.target.value)} />
@@ -444,6 +519,21 @@ export default function GroupView() {
             {addLoading ? <span className="spinner" /> : <><Plus size={16} /> Add Resource</>}
           </button>
         </form>
+      </Modal>
+
+      {/* Article Viewer */}
+      <ArticleViewer
+        resource={viewingArticle}
+        isOpen={!!viewingArticle}
+        onClose={() => setViewingArticle(null)}
+        onVote={handleVote}
+        onBookmark={(id) => toggleBookmark(id)}
+        bookmarked={viewingArticle ? isBookmarked(viewingArticle._id) : false}
+      />
+
+      {/* Chat Modal */}
+      <Modal isOpen={!!chatResource} onClose={() => setChatResource(null)} title={`💬 ${chatResource?.Name || 'Chat'}`} size="md">
+        {chatResource && <CommentThread resourceId={chatResource._id} />}
       </Modal>
 
       {/* Confirm Dialogs */}
@@ -472,6 +562,15 @@ export default function GroupView() {
         title="Regenerate Join Code"
         message="This will invalidate the current join code. Anyone who has the old code will no longer be able to use it to join."
         confirmText="Regenerate"
+        danger
+      />
+      <ConfirmDialog
+        isOpen={!!memberToRemove}
+        onClose={() => setMemberToRemove(null)}
+        onConfirm={() => handleRemoveMember(memberToRemove?._id)}
+        title="Remove Member"
+        message={`Are you sure you want to remove ${memberToRemove?.UserName} from the group?`}
+        confirmText="Remove"
         danger
       />
     </div>

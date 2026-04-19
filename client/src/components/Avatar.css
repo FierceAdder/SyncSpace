@@ -1,18 +1,44 @@
 .avatar {
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
-  color: white;
   font-weight: 700;
-  font-family: var(--font-heading);
-  letter-spacing: 0.02em;
+  color: white;
   flex-shrink: 0;
-  user-select: none;
-  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.2);
+  position: relative;
+  overflow: hidden;
   transition: transform var(--transition-fast);
 }
 
 .avatar:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
+}
+
+.avatar-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+}
+
+.avatar-initials-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+  z-index: 0;
+}
+
+.avatar-fallback img {
+  display: none !important;
+}
+
+.avatar-fallback .avatar-initials-fallback {
+  z-index: 1;
 }

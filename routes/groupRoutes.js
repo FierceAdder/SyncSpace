@@ -18,8 +18,6 @@ const generateJoinCode = () => {
     return result;
 };
 
-
-
 router.post("/create", verifyToken, async (req, res) => {
     try {
         const details = req.body;

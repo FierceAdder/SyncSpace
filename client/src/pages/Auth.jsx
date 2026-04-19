@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
-import { ArrowRight, Eye, EyeOff, Mail, Lock, User, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Mail, Lock, User, Sun, Moon, ScrollText } from 'lucide-react';
+import Modal from '../components/Modal';
 import './Auth.css';
 
 export default function Auth() {
@@ -19,6 +20,8 @@ export default function Auth() {
   const toast = useToast();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,7 +136,21 @@ export default function Auth() {
               </div>
             </div>
 
-            <button className="btn-primary" disabled={loading} style={{ width: '100%', marginTop: 'var(--space-sm)' }}>
+            {mode === 'register' && (
+              <label className="auth-terms-checkbox animate-fade-in-up">
+                <input
+                  type="checkbox"
+                  checked={agreedTerms}
+                  onChange={e => setAgreedTerms(e.target.checked)}
+                />
+                <span>
+                  I agree to the{' '}
+                  <button type="button" className="auth-terms-link" onClick={() => setShowTerms(true)}>Terms of Service & Privacy Policy</button>
+                </span>
+              </label>
+            )}
+
+            <button className="btn-primary" disabled={loading || (mode === 'register' && !agreedTerms)} style={{ width: '100%', marginTop: 'var(--space-sm)' }}>
               {loading ? (
                 <span className="spinner" />
               ) : (
@@ -143,6 +160,13 @@ export default function Auth() {
                 </>
               )}
             </button>
+
+            {mode === 'login' && (
+              <p className="auth-terms-notice">
+                By signing in, you agree to our{' '}
+                <button type="button" className="auth-terms-link" onClick={() => setShowTerms(true)}>Terms of Service</button>.
+              </p>
+            )}
           </form>
 
           <div className="auth-switch">
@@ -153,6 +177,57 @@ export default function Auth() {
           </div>
         </div>
       </div>
+
+      {/* Terms of Service Modal */}
+      <Modal isOpen={showTerms} onClose={() => setShowTerms(false)} title="Terms of Service & Privacy Policy" size="lg">
+        <div className="terms-content">
+          <p className="terms-updated">Last updated: April 2026</p>
+
+          <h4>1. Acceptance of Terms</h4>
+          <p>By creating an account or using SyncSpace, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree, do not use the platform.</p>
+
+          <h4>2. User Accounts</h4>
+          <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information and to update it as necessary. You must be at least 13 years old to use SyncSpace.</p>
+
+          <h4>3. Content Ownership & Copyright</h4>
+          <p>You retain ownership of content you upload. However, by uploading content to SyncSpace, you represent and warrant that:</p>
+          <ul>
+            <li>You own or have the necessary rights, licenses, and permissions to share the content.</li>
+            <li>The content does not infringe upon any third party's intellectual property rights, including copyrights, trademarks, or trade secrets.</li>
+            <li>You grant SyncSpace a non-exclusive, royalty-free license to host and display the content to authorized group members.</li>
+          </ul>
+
+          <h4>4. Acceptable Use</h4>
+          <p>You agree not to:</p>
+          <ul>
+            <li>Upload copyrighted material without authorization (pirated textbooks, proprietary lectures, etc.).</li>
+            <li>Share content that is illegal, harmful, threatening, abusive, or otherwise objectionable.</li>
+            <li>Attempt to gain unauthorized access to other accounts or systems.</li>
+            <li>Use the platform for commercial purposes without permission.</li>
+          </ul>
+
+          <h4>5. DMCA & Copyright Takedown</h4>
+          <p>SyncSpace respects intellectual property rights. If you believe content on the platform infringes your copyright, you may submit a takedown request. We will promptly review and remove infringing content. Repeat infringers will have their accounts terminated.</p>
+
+          <h4>6. Privacy</h4>
+          <p>We collect and store your email, username, and account activity data. Uploaded files are stored securely on AWS S3. We do not sell your data to third parties. We may use anonymized, aggregate data to improve the platform.</p>
+
+          <h4>7. Limitation of Liability</h4>
+          <p>SyncSpace is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the platform, including loss of data or unauthorized access to your account.</p>
+
+          <h4>8. Termination</h4>
+          <p>We reserve the right to suspend or terminate your account at any time for violations of these terms. You may delete your account at any time.</p>
+
+          <h4>9. Changes to Terms</h4>
+          <p>We may update these terms from time to time. Continued use of the platform after changes constitutes acceptance of the updated terms.</p>
+
+          <div className="terms-footer">
+            <button className="btn-primary" onClick={() => setShowTerms(false)} style={{ width: '100%' }}>
+              I Understand
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

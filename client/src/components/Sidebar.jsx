@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, UserPlus, LayoutDashboard, Bookmark, ChevronLeft, ChevronRight, Crown, Users, FolderOpen, X } from 'lucide-react';
+import { Plus, UserPlus, LayoutDashboard, Bookmark, ChevronLeft, ChevronRight, Crown, Users, FolderOpen, X, Lightbulb } from 'lucide-react';
 import api from '../api/api';
 import { useToast } from '../context/ToastContext';
 import Avatar from './Avatar';
 import Modal from './Modal';
+import FeedbackModal from './FeedbackModal';
 import './Sidebar.css';
 
 export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeave, hoverExpanded }) {
@@ -12,6 +13,7 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showGroupsSheet, setShowGroupsSheet] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -70,6 +72,8 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
     { path: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
   ];
 
+  const handleFeedbackClick = () => setShowFeedback(true);
+
   const isGroupActive = location.pathname.startsWith('/groups/');
 
   return (
@@ -103,6 +107,15 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
                 <span className="sidebar-label">{item.label}</span>
               </button>
             ))}
+            {/* Feedback nav item */}
+            <button
+              className="nav-item"
+              onClick={handleFeedbackClick}
+              title="Feedback"
+            >
+              <Lightbulb size={18} />
+              <span className="sidebar-label">Feedback</span>
+            </button>
           </nav>
 
           <div className="sidebar-divider" />
@@ -282,6 +295,9 @@ export default function Sidebar({ collapsed, onToggle, onMouseEnter, onMouseLeav
           </button>
         </form>
       </Modal>
+
+      {/* Feedback Modal */}
+      <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </>
   );
 }

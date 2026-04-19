@@ -1,0 +1,116 @@
+.stats-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: hsla(0, 0%, 0%, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.stats-modal {
+  width: 100%;
+  max-width: 380px;
+  max-height: 480px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stats-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-glass-border);
+}
+
+.stats-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-primary);
+}
+
+.stats-modal-title h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.stats-modal-close {
+  color: var(--color-text-tertiary);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.stats-modal-close:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-hover);
+}
+
+.stats-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.stats-modal-loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+}
+
+.stats-modal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+}
+
+.stats-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stats-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  width: 100%;
+  text-align: left;
+  transition: all var(--transition-fast);
+  animation: fadeInUp 0.3s ease both;
+}
+
+.stats-modal-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.stats-modal-item-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.stats-modal-chevron {
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast);
+}
+
+.stats-modal-item:hover .stats-modal-chevron {
+  transform: translateX(4px);
+  color: var(--color-accent);
+}

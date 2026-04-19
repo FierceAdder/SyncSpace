@@ -173,6 +173,24 @@
   border-top: var(--border-subtle);
 }
 
+.search-view-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  border-top: var(--border-subtle);
+  transition: all var(--transition-fast);
+}
+
+.search-view-all:hover {
+  background: var(--color-accent-subtle);
+}
+
 .search-no-results {
   padding: 20px 14px;
   text-align: center;
