@@ -194,8 +194,8 @@
   justify-content: space-between;
   margin-bottom: var(--space-sm);
   padding: 0 var(--space-sm);
-  /* Fixed height so it never jumps */
-  height: 28px;
+  /* Changed from fixed height to min-height so it wraps stacked buttons */
+  min-height: 28px;
   overflow: hidden;
 }
 
@@ -207,7 +207,6 @@
   color: var(--color-text-tertiary);
 }
 
-/* Buttons always in a row — never stacked — fits in 68px collapsed width */
 .group-actions-mini {
   display: flex;
   flex-direction: row;
@@ -232,11 +231,15 @@
   color: var(--color-accent);
 }
 
-/* In collapsed state, center the action buttons */
+/* In collapsed state, center the action buttons and stack them vertically */
 .sidebar.collapsed .sidebar-groups-header {
   justify-content: center;
   padding: 0;
-  gap: 4px;
+}
+
+.sidebar.collapsed .group-actions-mini {
+  flex-direction: column;
+  gap: 8px; /* space between stacked buttons */
 }
 
 /* ---- Groups list ---- */
