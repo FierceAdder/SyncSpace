@@ -72,9 +72,6 @@ mongoose.connect(MONGO_URI)
     .catch(err => console.error("Encountered error while connecting to MongoDB : ", err));
 
 
-app.get('/', (req, res) => {
-    res.send("<h1>Welcome to SyncSpace</h1>");
-});
 
 // Public stats for landing page — no auth required
 app.get('/stats', async (req, res) => {
@@ -95,8 +92,9 @@ app.get('/stats', async (req, res) => {
 
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'client', 'dist')));
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+    
+    app.get(/^(.*)$/, (req, res) => {
+        res.sendFile(path.resolve(__dirname, 'client', 'dist', 'index.html'));
     });
 }
 
