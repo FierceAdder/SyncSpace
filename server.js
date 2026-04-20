@@ -14,10 +14,14 @@ const cors = require("cors");
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = process.env.CORS_ORIGINS 
+    ? process.env.CORS_ORIGINS.split(',') 
+    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
+
 // Socket.io setup
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:5173", "http://localhost:5174"],
+        origin: allowedOrigins,
         methods: ["GET", "POST"]
     }
 });
@@ -55,9 +59,6 @@ io.on('connection', (socket) => {
     });
 });
 
-const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
-    : ["http://localhost:5173", "http://localhost:5174"];
 app.use(cors({ origin: allowedOrigins }));
 const MONGO_URI = process.env.MONGO_URI;
 app.use(express.json({ limit: '10mb' }));
@@ -70,7 +71,6 @@ app.use('/feedback', feedbackRoutes);
 mongoose.connect(MONGO_URI)
     .then(() => console.log('Connected to MongoDB via mongoose'))
     .catch(err => console.error("Encountered error while connecting to MongoDB : ", err));
-
 
 
 // Public stats for landing page — no auth required
@@ -90,6 +90,7 @@ app.get('/stats', async (req, res) => {
     }
 });
 
+// Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'client', 'dist')));
     
@@ -98,8 +99,6 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server live on port ${PORT} (with Socket.io)`);
+server.listen(3000, () => {
+    console.log("Server live on port 3000 (with Socket.io)");
 });
