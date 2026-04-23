@@ -1,51 +1,60 @@
 const express = require('express');
-const path = require('path');
 const dotenv = require('dotenv').config();
 const mongoose = require('mongoose');
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+
 const userRoutes = require('./routes/userRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
-const commentRoutes = require('./routes/commentRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
-const cors = require("cors");
+const commentRoutes = require('./routes/commentRoutes');
 
+const User = require('./models/User');
+const Group = require('./models/Group');
+const Resource = require('./models/Resources');
+
+const cors = require('cors');
 const app = express();
+
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
+
+// CORS — allow Vite dev server in development
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? true  // same-origin in production (served as static files)
+        : ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true
+};
+app.use(cors(corsOptions));
+
+app.use(express.json());
+
+// ---- HTTP server + Socket.IO ----
 const server = http.createServer(app);
-
-const allowedOrigins = process.env.CORS_ORIGINS 
-    ? process.env.CORS_ORIGINS.split(',') 
-    : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
-
-// Socket.io setup
 const io = new Server(server, {
-    cors: {
-        origin: allowedOrigins,
-        methods: ["GET", "POST"]
-    }
+    cors: corsOptions,
+    transports: ['websocket', 'polling'],
 });
 
-// Make io accessible in routes
+// Make io accessible to route handlers via req.app.get('io')
 app.set('io', io);
 
-// Socket.io connection handling
+// Socket.IO connection handling
 io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
-
-    // Join a resource's chat room
+    // Join a resource room (for live comments)
     socket.on('join_resource', (resourceId) => {
         socket.join(`resource:${resourceId}`);
-        console.log(`Socket ${socket.id} joined resource:${resourceId}`);
     });
 
-    // Leave a resource's chat room
+    // Leave a resource room
     socket.on('leave_resource', (resourceId) => {
         socket.leave(`resource:${resourceId}`);
-        console.log(`Socket ${socket.id} left resource:${resourceId}`);
     });
 
-    // Typing indicator
+    // Typing indicators
     socket.on('typing', ({ resourceId, userName }) => {
         socket.to(`resource:${resourceId}`).emit('user_typing', { userName });
     });
@@ -53,52 +62,44 @@ io.on('connection', (socket) => {
     socket.on('stop_typing', ({ resourceId }) => {
         socket.to(`resource:${resourceId}`).emit('user_stop_typing');
     });
-
-    socket.on('disconnect', () => {
-        console.log(`Socket disconnected: ${socket.id}`);
-    });
 });
 
-app.use(cors({ origin: allowedOrigins }));
-const MONGO_URI = process.env.MONGO_URI;
-app.use(express.json({ limit: '10mb' }));
-app.use('/user', userRoutes);
-app.use('/groups', groupRoutes);
-app.use('/resources', resourceRoutes);
-app.use('/comments', commentRoutes);
-app.use('/feedback', feedbackRoutes);
+// ---- API Routes (all prefixed with /api) ----
+app.use('/api/user', userRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/resources', resourceRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/comments', commentRoutes);
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('Connected to MongoDB via mongoose'))
-    .catch(err => console.error("Encountered error while connecting to MongoDB : ", err));
-
-
-// Public stats for landing page — no auth required
-app.get('/stats', async (req, res) => {
+// Public stats endpoint (no auth required)
+app.get('/api/stats', async (req, res) => {
     try {
-        const User = require('./models/User');
-        const Group = require('./models/Group');
-        const Resource = require('./models/Resources');
         const [users, groups, resources] = await Promise.all([
             User.countDocuments(),
             Group.countDocuments(),
-            Resource.countDocuments(),
+            Resource.countDocuments()
         ]);
         res.json({ users, groups, resources });
     } catch (err) {
-        res.json({ users: 0, groups: 0, resources: 0 });
+        res.status(500).json({ users: 0, groups: 0, resources: 0 });
     }
 });
 
-// Serve frontend in production
+// Serve React static build in production
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'client', 'dist')));
-    
-    app.get(/^(.*)$/, (req, res) => {
-        res.sendFile(path.resolve(__dirname, 'client', 'dist', 'index.html'));
+    const clientBuildPath = path.join(__dirname, 'client', 'dist');
+    app.use(express.static(clientBuildPath));
+    // SPA fallback — Express v5 requires regex instead of '*' wildcard
+    app.get(/(.*)/, (req, res) => {
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
 }
 
-server.listen(3000, () => {
-    console.log("Server live on port 3000 (with Socket.io)");
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('✅ Connected to MongoDB'))
+    .catch(err => console.error('❌ MongoDB connection error:', err));
+
+// Use server.listen (not app.listen) so Socket.IO works
+server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });

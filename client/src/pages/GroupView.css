@@ -150,7 +150,9 @@
   height: 56px;
   border-radius: var(--radius-full);
   background: var(--gradient-primary);
-  color: white;
+  /* gradient-primary is near-white in dark mode, blue in light mode
+     color-text-inverse is black in dark (readable on white) and white in light (readable on blue) */
+  color: var(--color-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,6 +196,13 @@
   background: var(--color-accent-subtle);
   border-color: var(--color-accent);
   color: var(--color-accent);
+}
+
+/* Leave Group — red on hover */
+.btn-leave-group:hover {
+  background: hsla(0, 85%, 60%, 0.15);
+  border-color: hsla(0, 85%, 60%, 0.4);
+  color: var(--color-error);
 }
 
 @media (max-width: 768px) {

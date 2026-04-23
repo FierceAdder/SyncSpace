@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +20,13 @@ export default function GroupView() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
 
   const [group, setGroup] = useState(null);
   const [resources, setResources] = useState([]);
@@ -46,7 +52,6 @@ export default function GroupView() {
   const [resContent, setResContent] = useState('');
   const [resDescription, setResDescription] = useState('');
   const [resCategory, setResCategory] = useState('');
-  const [addLoading, setAddLoading] = useState(false);
 
   // Article editor
   const [articleBody, setArticleBody] = useState('');
@@ -60,20 +65,28 @@ export default function GroupView() {
   // Chat modal
   const [chatResource, setChatResource] = useState(null);
 
+  // Gate fetches on auth being fully resolved — prevents "token required" on direct URL load
   useEffect(() => {
+    if (authLoading) return;
     fetchGroup();
     fetchResources();
-  }, [groupId]);
+  }, [groupId, authLoading]);
 
   const fetchGroup = async () => {
     try {
       const data = await api.getGroup(groupId);
-      setGroup(data.group);
+      if (isMounted.current) setGroup(data.group);
     } catch (err) {
-      toast.error(err.message);
-      navigate('/dashboard');
+      if (!isMounted.current) return;
+      // Only redirect on auth errors — not transient failures
+      if (err.status === 401 || err.status === 403) {
+        navigate('/dashboard');
+      } else {
+        toast.error(err.message || 'Failed to load group');
+        navigate('/dashboard');
+      }
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const fetchResources = async () => {
@@ -150,7 +163,16 @@ export default function GroupView() {
     try {
       if (type === 'up') await api.upvoteResource(resourceId);
       else await api.downvoteResource(resourceId);
-      fetchResources();
+      // Fetch fresh resources and sync the article viewer if it's open for this resource
+      const data = await api.getGroupResources(groupId);
+      const fresh = data.resources || [];
+      setResources(fresh);
+      // Fix #5: keep viewingArticle in sync so vote counts update live in the modal
+      setViewingArticle(prev =>
+        prev && prev._id === resourceId
+          ? fresh.find(r => r._id === resourceId) || prev
+          : prev
+      );
     } catch (err) {
       toast.error('Vote failed');
     }
@@ -196,48 +218,52 @@ export default function GroupView() {
     }
   };
 
+  const resetResourceForm = () => {
+    setResName('');
+    setResContent('');
+    setResDescription('');
+    setResCategory('');
+    setArticleBody('');
+    setFileData(null);
+    setResType('link');
+  };
+
   const handleAddResource = async (e) => {
     e.preventDefault();
-    setAddLoading(true);
+
+    const body = {
+      groupToPost: groupId,
+      Resource_Type: resType,
+      Name: resName,
+      Content: resContent,
+      Description: resDescription,
+      Category: resCategory,
+    };
+
+    if (resType === 'article') {
+      body.Article_Body = articleBody;
+      body.Content = '';
+    }
+
+    if (resType === 'file' && fileData) {
+      body.File_Key = fileData.File_Key;
+      body.File_Name = fileData.File_Name;
+      body.File_Size = fileData.File_Size;
+      body.Content = '';
+    }
+
+    // Fix #8: close modal immediately — don't make the user wait
+    setShowAddResource(false);
+    resetResourceForm();
+    toast.info('Adding resource…');
+
     try {
-      const body = {
-        groupToPost: groupId,
-        Resource_Type: resType,
-        Name: resName,
-        Content: resContent,
-        Description: resDescription,
-        Category: resCategory,
-      };
-
-      // Article
-      if (resType === 'article') {
-        body.Article_Body = articleBody;
-        body.Content = ''; // no URL for articles
-      }
-
-      // File
-      if (resType === 'file' && fileData) {
-        body.File_Key = fileData.File_Key;
-        body.File_Name = fileData.File_Name;
-        body.File_Size = fileData.File_Size;
-        body.Content = ''; // no URL for files
-      }
-
       await api.addResource(body);
       toast.success('Resource added!');
-      setShowAddResource(false);
-      setResName('');
-      setResContent('');
-      setResDescription('');
-      setResCategory('');
-      setArticleBody('');
-      setFileData(null);
-      setResType('link');
       fetchResources();
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to add resource');
     }
-    setAddLoading(false);
   };
 
   if (loading) {
@@ -273,7 +299,7 @@ export default function GroupView() {
             {codeCopied ? <Check size={14} className="copy-check" /> : <Copy size={14} />}
           </button>
           {!group.isOwner && (
-            <button className="btn-secondary" onClick={() => setShowLeaveConfirm(true)}>
+            <button className="btn-secondary btn-leave-group" onClick={() => setShowLeaveConfirm(true)}>
               <LogOut size={16} /> Leave
             </button>
           )}
@@ -314,7 +340,7 @@ export default function GroupView() {
                     resource={r}
                     onVote={handleVote}
                     onDelete={handleDeleteResource}
-                    canDelete={true}
+                    canDelete={!!(user?._id && user._id === r.Posted_By?._id?.toString() || group?.isOwner)}
                     onViewArticle={(res) => setViewingArticle(res)}
                     onViewChat={(res) => setChatResource(res)}
                     onDownload={handleDownload}
@@ -515,8 +541,8 @@ export default function GroupView() {
             <label style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>Category</label>
             <input className="input-field" placeholder="e.g., Lecture Notes, Tutorials" value={resCategory} onChange={e => setResCategory(e.target.value)} />
           </div>
-          <button className="btn-primary" disabled={addLoading} style={{ width: '100%' }}>
-            {addLoading ? <span className="spinner" /> : <><Plus size={16} /> Add Resource</>}
+          <button className="btn-primary" style={{ width: '100%' }}>
+            <Plus size={16} /> Add Resource
           </button>
         </form>
       </Modal>

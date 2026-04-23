@@ -38,23 +38,45 @@ router.post('/add',verifyToken,async (req,res)=>{
             }
 
             if(details.Resource_Type.toLowerCase()==="link" || details.Resource_Type.toLowerCase()==="video"){
-                try{
-                    const ogData = await ogs({ url: details.Content });
-                    if (ogData && ogData.result) {
-                        newResource.Thumbnail_url = ogData.result.ogImage ? ogData.result.ogImage[0].url : '';
-                        newResource.Original_title = ogData.result.ogTitle || '';
-                    }
-                }catch(err){
-                    console.log("OG Scraping Error : ",err);
-                }
-                if(!newResource.Thumbnail_url){
+                // Helper: extract YouTube video ID from various URL formats
+                const getYouTubeId = (url) => {
+                    try {
+                        const u = new URL(url);
+                        if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+                        if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+                    } catch { /* ignore */ }
+                    return null;
+                };
+
+                const ytId = getYouTubeId(details.Content);
+                if (ytId) {
+                    // Use YouTube's direct thumbnail CDN — no scraping needed
+                    newResource.Thumbnail_url = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+                    // Also try to fetch the OG title for YouTube
+                    try {
+                        const ogData = await ogs({ url: details.Content });
+                        if (ogData?.result?.ogTitle) newResource.Original_title = ogData.result.ogTitle;
+                    } catch { /* title is optional */ }
+                } else {
+                    // Non-YouTube: use OGS for full metadata
                     try{
-                        const urlObj = new URL(details.Content);
-                        newResource.Thumbnail_url = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}`;
+                        const ogData = await ogs({ url: details.Content });
+                        if (ogData && ogData.result) {
+                            newResource.Thumbnail_url = ogData.result.ogImage ? ogData.result.ogImage[0].url : '';
+                            newResource.Original_title = ogData.result.ogTitle || '';
+                        }
                     }catch(err){
-                        console.log("Favicon Fetch Error : ",err);
+                        console.log("OG Scraping Error : ",err);
                     }
-                    
+                    // Fallback to favicon if OGS gave nothing
+                    if(!newResource.Thumbnail_url){
+                        try{
+                            const urlObj = new URL(details.Content);
+                            newResource.Thumbnail_url = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=128`;
+                        }catch(err){
+                            console.log("Favicon Fetch Error : ",err);
+                        }
+                    }
                 }
             }
 
@@ -227,7 +249,11 @@ router.get("/:groupId",verifyToken,async (req,res)=>{
         const userId=req.user.id;
         const isMember=(await User.exists({_id : userId,Groups_Part_Of : groupId}));
         if(isMember){
-            const resources = await Resource.find({ Group_Posted_In: groupId })
+            // Exclude file resources that never completed their S3 upload (no File_Key)
+            const resources = await Resource.find({
+                Group_Posted_In: groupId,
+                $nor: [{ Resource_Type: { $regex: /^file$/i }, File_Key: { $in: [null, ''] } }]
+            })
                 .populate('Posted_By', 'UserName Avatar_Url')
                 .sort({ createdAt: -1, _id: -1 });
             res.status(200).json({

@@ -109,6 +109,7 @@ router.get('/profile', verifyToken, async (req, res) => {
         const totalUpvotes = userResources.reduce((sum, r) => sum + (r.Upvotes?.length || 0), 0);
 
         const profile = {
+            "_id": user._id.toString(),
             "Username": user.UserName,
             "Groups_Owned": user.Groups_Created.length,
             "Groups_Part_Of": user.Groups_Part_Of.length,

@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE || '';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('syncspace_token');
