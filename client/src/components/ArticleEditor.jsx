@@ -27,6 +27,8 @@ export default function ArticleEditor({ value, onChange, placeholder = 'Start wr
 
   const wordCount = (value || '')
     .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#?\w+;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')

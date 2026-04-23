@@ -27,7 +27,7 @@ export default function ArticleViewer({ resource, isOpen, onClose, onVote, onBoo
   const upvoteCount = resource.Upvotes?.length || 0;
   const downvoteCount = resource.Downvotes?.length || 0;
   const readTime = Math.max(1, Math.ceil(
-    (resource.Article_Body || '').replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length / 200
+    (resource.Article_Body || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&#?\w+;/g, ' ').split(/\s+/).filter(Boolean).length / 200
   ));
 
   const createdDate = resource.createdAt
